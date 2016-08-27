@@ -15,6 +15,13 @@ cabal-version:       >=1.10
 executable sky-haskell-playground
   hs-source-dirs:      src
   main-is:             Main.hs
+  other-modules:
+    Sky.ControlLens.ExternalDefs
+    Sky.ControlLens.LensCompat
+    Sky.ControlLens.TestControlLens
+    Sky.ControlLens.TestLensCompat
+    Sky.Graph.TestGraph
+    Sky.Lens.SimpleLens
   default-language:    Haskell2010
   ghc-options:
     -fwarn-tabs
