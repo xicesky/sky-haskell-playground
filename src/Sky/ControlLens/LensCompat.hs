@@ -6,6 +6,7 @@ import Control.Lens
 import Control.Lens.TH (makeLensesWith, defaultFieldRules)
 import Control.Lens.Internal.FieldTH (DefName(TopName))
 import Language.Haskell.TH.Syntax (Name, nameBase, mkName)
+import Language.Haskell.TH.Lib (DecsQ)
 
 -- Copied from lens-4.14 ---------------------------------------------------------------------------
 
@@ -26,4 +27,5 @@ directNamer :: FieldNamer
 directNamer = mappingNamer return
 --simpleNamer _ _ n = [TopName (mkName (nameBase n))]
 
+makeDirectLenses :: Name -> DecsQ
 makeDirectLenses = makeLensesWith (defaultFieldRules & lensField .~ directNamer)

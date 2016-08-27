@@ -58,7 +58,9 @@ class SimpleGraph g v e => UsefulGraph g v e where
     edges g = concatMap (outE g) (vertices g)
 
 -- Utilities
+indegree :: forall a g v. UsefulGraph g v a => g -> v -> Int
 indegree g v = length (inE g v) 
+outdegree :: forall a g v. UsefulGraph g v a => g -> v -> Int
 outdegree g v = length (outE g v)
 
 ---- Laws for undirected graphs
