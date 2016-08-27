@@ -3,10 +3,11 @@
 
 module Sky.ControlLens.TestLensCompat where
 
+import Prelude hiding (mod)
 import Data.HashMap.Strict
 import Control.Monad.Trans.Class
 import Control.Monad.State.Class
-import Control.Monad.State.Strict (StateT, runStateT, execStateT)
+import Control.Monad.State.Strict (StateT, runStateT)
 import Data.Functor.Identity
 
 import Control.Lens
@@ -27,13 +28,15 @@ data CodegenState = CodegenState {
 newtype CodegenT m a = CodegenT { unCodegenT :: StateT CodegenState m a }
   deriving (Functor, Applicative, Monad, MonadTrans, MonadState CodegenState )
 
+defaultModule :: E.Module
 defaultModule = E.Module { E.moduleName = "default", E.definitions = [] }
+defaultState :: CodegenState
 defaultState = CodegenState defaultModule empty
 
 runCodegenT :: (Monad m) => CodegenT m a -> CodegenState -> m (a, E.Module)
-runCodegenT cg init = do 
-  (val, state) <- runStateT (unCodegenT cg) init
-  return (val, _currentModule state)
+runCodegenT cg initial = do 
+  (val, st) <- runStateT (unCodegenT cg) initial
+  return (val, _currentModule st)
 
 newCodegenT :: (Monad m) => CodegenT m a -> m (a, E.Module)
 newCodegenT codegen = runCodegenT codegen defaultState
@@ -55,6 +58,7 @@ define t name = do
 
 makeDirectLenses ''E.Module
 makeLenses ''CodegenState
+makeDirectLenses ''E.Stuff
 
 -- Test ------------------------------------------------------------------------
 

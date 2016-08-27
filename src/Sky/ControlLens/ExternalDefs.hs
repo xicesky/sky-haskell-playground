@@ -15,3 +15,22 @@ data Module = Module {
   , definitions ::  [Definition]
   }
   deriving (Eq, Show)
+
+-- Let's try some ADTs
+data Stuff
+  = StuffA {
+      name :: String
+    , value :: Int
+    }
+  | StuffB {
+      name :: String
+    , flag :: Bool
+    }
+  deriving (Eq, Show)
+
+exampleStuffA :: Stuff
+exampleStuffA = StuffA "intvalue" 5
+exampleStuffB :: Stuff
+exampleStuffB = StuffB "boolflag" True
+exampleStuff :: [Stuff]
+exampleStuff = [ exampleStuffA, exampleStuffB ]
