@@ -44,6 +44,13 @@ lensRToLens (LensR getter setter) m s = fmap (flip setter s) (m $ getter s)
 over :: Lens' s a -> (a -> a) -> s -> s
 over lens m = runIdentity . lens (Identity . m)
 
+-- modify, returning the old state
+overRet :: Lens' s a -> (a -> a) -> s -> (a, s)
+overRet lens m =
+  -- via: f a = ((,) a)
+  lens $ \a -> (a, m a)
+
+
 -- Example
 
 data Person = Person { _name :: String, _salary :: Int }
@@ -51,6 +58,9 @@ data Person = Person { _name :: String, _salary :: Int }
 
 name :: Lens' Person String
 name m p = fmap (\x -> p { _name = x }) (m $ _name p)
+
+personX :: Person
+personX = Person "Hans Wurst" 10
 -- name :: forall f. Functor f => (String -> f String) -> Person -> f Person
 -- name m p = let
 --     -- m :: String -> f String
