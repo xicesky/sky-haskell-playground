@@ -43,8 +43,8 @@ newCodegenT codegen = runCodegenT codegen defaultState
 
 -- Without lens
 
-define :: (Monad m) => E.Type -> String -> CodegenT m ()
-define t name = do
+define2 :: (Monad m) => E.Type -> String -> CodegenT m ()
+define2 t name = do
   modify $ \s -> let
     oldMod = _currentModule s
     oldDefs = E.definitions oldMod
@@ -60,6 +60,11 @@ makeDirectLenses ''E.Module
 makeLenses ''CodegenState
 makeDirectLenses ''E.Stuff
 
+-- And here is why lenses are great:
+
+define :: (Monad m) => E.Type -> String -> CodegenT m ()
+define t name = currentModule . definitions %= (++ [E.Definition name t])
+
 -- Test ------------------------------------------------------------------------
 
 testCodegen :: E.Module
@@ -74,7 +79,3 @@ main :: IO ()
 main = do
   putStrLn $ show testCodegen
 
--- XXX
-
-data Foo a = Foo { _bar :: Int, _baz :: Int, _quux :: a }
-makeLenses ''Foo
