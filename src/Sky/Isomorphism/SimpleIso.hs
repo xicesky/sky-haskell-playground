@@ -3,7 +3,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
-module Sky.Lens.SimpleIso where
+module Sky.Isomorphism.SimpleIso where
 
 import Data.Functor.Identity
 import Data.Monoid (Endo(..))

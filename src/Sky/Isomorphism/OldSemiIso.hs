@@ -6,7 +6,7 @@
 {-# LANGUAGE FlexibleContexts #-}           -- For Exposed (Either String) p
 {-# LANGUAGE FlexibleInstances #-}          -- For Exposed m (ExchangeM m a b)
 
-module OldSemiIso where
+module Sky.Isomorphism.OldSemiIso where
 
 import Data.Functor.Identity
 import qualified Control.Category as Cat

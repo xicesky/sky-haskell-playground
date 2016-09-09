@@ -1,8 +1,14 @@
 
-{-| Fully operational semi-isomorphisms using the van Laarhoven representation
+{-| Fully operational semi-isomorphisms using the van Laarhoven representation.
+
+    These can be used as:
+        - Isomorphisms
+        - Partial isormorphisms
+        - Semi-Isomorphisms (see e.g. the semi-iso package)
+
     TODO:
         - Replace "Exchange" by "FunctionPair" with an actual tuple inside
-        - Demonstrations and tests
+        - Tests? Real proofs?
 -}
 
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -13,7 +19,7 @@
 {-# LANGUAGE FlexibleInstances #-}          -- For Exposed m (Exchange m x y)
 {-# LANGUAGE InstanceSigs #-}               -- Because i love it
 
-module Sky.Lens.SemiIso where
+module Sky.Isomorphism.SemiIso where
 
 import Data.Functor.Identity
 import Data.Tuple (swap)
@@ -262,6 +268,7 @@ unapplySemiIso siso = let
     bmit :: b -> m (Identity t)
     Exchange sma bmit = siso exchangeZero
     in fmap runIdentity . bmit
+-- unapplySemiIso = applySemiIso . reverseSemiIso
 
 -- Reverse a SemiIso
 -- If you think of it as a tuple (s -> m a, b -> m t), then reverse = swap
