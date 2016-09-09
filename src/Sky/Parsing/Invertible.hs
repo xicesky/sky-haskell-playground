@@ -5,7 +5,12 @@
 
 module Sky.Parsing.Invertible where
 
+import Prelude hiding (id, (.))
+import Control.Category                     -- yay
+
 import Data.Functor.Identity
+import Text.Read (readMaybe)
+
 import Sky.Isomorphism.Class
 import Sky.Isomorphism.SemiIso
 
@@ -20,5 +25,9 @@ class IsoFunctor f where
 
 infixl 4 <*>
 
-class IsoApplicative f where
+class IsoFunctor f => IsoApplicative f where
     (<*>) :: forall a b. f (Iso a b) -> f a -> f b
+
+-- Simple parser / pp from read / show
+mkInvertible :: forall a. (Read a, Show a) => Iso String a
+mkInvertible = iso readMaybe (return . show)

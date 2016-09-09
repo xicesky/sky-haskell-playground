@@ -1,14 +1,19 @@
 
 {-# LANGUAGE InstanceSigs #-}               -- Because i love it
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeSynonymInstances #-}       -- Category (MumuIso' m)
 
 module Sky.Isomorphism.Class where
+
+import Prelude hiding (id, (.))
+import Control.Category                     -- yay
 
 import Data.Tuple (swap)
 
 -- Note: Isomorphisms should be instances of Category!
 
--- The mightiest of all
+----------------------------------------------------------------------------------------------------
+
 class SemiIsomorphism i where
     packSemiIsomorphism :: Monad m => (s -> m a, b -> m t) -> i m s t a b
     unpackSemiIsomorphism :: Monad m => i m s t a b -> (s -> m a, b -> m t)
@@ -22,13 +27,23 @@ class SemiIsomorphism i where
     revertSemiIsomorphism :: Monad m => i m s t a b -> i m b a t s
     revertSemiIsomorphism = packSemiIsomorphism . swap . unpackSemiIsomorphism
 
--- class SimpleSemiIsomorphism
+----------------------------------------------------------------------------------------------------
 
 data MumuIso m s t a b = MumuIso { _rawMumuIso :: (s -> m a, b -> m t) }
+type MumuIso' m s a = MumuIso m s s a a
+
+-- This won't be easy
+
+instance Monad m => Category (MumuIso' m) where
+    id = MumuIso (id, id)
+    (MumuIso (applyF, unapplyF)) . (MumuIso (applyG, unapplyG)) =
+        MumuIso ((applyF . applyG), (unapplyG . unapplyF))
 
 instance SemiIsomorphism MumuIso where
     packSemiIsomorphism = MumuIso
     unpackSemiIsomorphism = _rawMumuIso
+
+----------------------------------------------------------------------------------------------------
 
 -- Operators and stuff
 iso :: forall i m s t a b. (SemiIsomorphism i, Monad m) => (s -> m a) -> (b -> m t) -> i m s t a b
