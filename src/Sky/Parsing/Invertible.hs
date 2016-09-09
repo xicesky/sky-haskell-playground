@@ -9,14 +9,16 @@ import Data.Functor.Identity
 import Sky.Isomorphism.Class
 import Sky.Isomorphism.SemiIso
 
+-- Doesn't work with raw SemiIso: f (SemiIso' ...) requires ImpredicativeTypes
+-- For now, go just with the mumu version
+type Iso a b = MumuIso Maybe a a b b
+
 infixl 4 <$>
 
 class IsoFunctor f where
-    (<$>) :: forall i a b. (SemiIsomorphism i) => i Maybe a a b b -> f a -> f b
+    (<$>) :: forall a b. Iso a b -> f a -> f b
 
 infixl 4 <*>
 
 class IsoApplicative f where
-    (<*>) :: forall i a b. (SemiIsomorphism i) => f (i Maybe a a b b) -> f a -> f b
-
--- Doesn't work with raw SemiIso: f (SemiIso' ...) requires ImpredicativeTypes
+    (<*>) :: forall a b. f (Iso a b) -> f a -> f b
