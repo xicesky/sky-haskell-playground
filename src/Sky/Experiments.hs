@@ -1,6 +1,9 @@
 
 module Sky.Experiments where
 
+-- Ideas:
+-- Actual implementations with simple values
+
 data A
 data B
 data C
