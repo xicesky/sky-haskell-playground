@@ -3,7 +3,9 @@
 {-# LANGUAGE FlexibleContexts #-}           -- Required for handling SemiIsos (Non type-variable argument in the constraint)
 {-# LANGUAGE RankNTypes #-}                 -- Since we redefine apply and unapply
 
-module Sky.Lens.SemiIsoDemo where
+module Sky.Isomorphism.SemiIsoDemo where
+
+-- TODO: Use Sky.Isomorphism.Class
 
 import Data.Functor.Identity
 import Data.Char (toUpper, toLower)

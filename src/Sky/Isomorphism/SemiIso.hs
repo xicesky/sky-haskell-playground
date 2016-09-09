@@ -26,8 +26,8 @@
 module Sky.Isomorphism.SemiIso
     (   SemiIso
     ,   SemiIso'
-    ,   Iso
-    ,   Iso'
+    --,   Iso
+    --,   Iso'
     ,   semiIso
     ,   unpackIso
     ,   packIso
