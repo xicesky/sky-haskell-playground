@@ -9,6 +9,10 @@
     TODO:
         - Replace "Exchange" by "FunctionPair" with an actual tuple inside
         - Tests? Real proofs?
+
+    Problems:
+        - Need reified versions for storing in containers because the type
+            [SemiIso ...] is illegal (requires ImpredicativeTypes)
 -}
 
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -19,13 +23,26 @@
 {-# LANGUAGE FlexibleInstances #-}          -- For Exposed m (Exchange m x y)
 {-# LANGUAGE InstanceSigs #-}               -- Because i love it
 
-module Sky.Isomorphism.SemiIso where
+module Sky.Isomorphism.SemiIso
+    (   SemiIso
+    ,   SemiIso'
+    ,   Iso
+    ,   Iso'
+    ,   semiIso
+    ,   unpackIso
+    ,   packIso
+    ,   apply
+    ,   unapply
+    ,   reverseIso
+    ) where
 
 import Data.Functor.Identity
 import Data.Tuple (swap)
 import qualified Control.Category as Cat
 --import Control.Monad (join)
 import Control.Monad (join, (>=>))
+
+import Sky.Isomorphism.Class
 
 ----------------------------------------------------------------------------------------------------
 -- Definitions
@@ -231,8 +248,8 @@ by simply using "fmap runIdentity" on it
 
 -}
 
-unpackSemiIso :: forall m s t a b. Monad m => SemiIso m s t a b -> (s -> m a, b -> m t)
-unpackSemiIso siso = let
+unpackIso :: forall m s t a b. Monad m => SemiIso m s t a b -> (s -> m a, b -> m t)
+unpackIso siso = let
     -- exchange :: Exchange a b s (Identity t)
     sma :: s -> m a
     bmit :: b -> m (Identity t)
@@ -249,8 +266,8 @@ unpackSemiIso siso = let
 -- Let's add a few helpers
 
 -- The actual inverse of unpackSemiIso (semiIso doesn't work on tuples)
-packSemiIso :: forall m s t a b. Monad m => (s -> m a, b -> m t) -> SemiIso m s t a b
-packSemiIso (sma, bmt) = semiIso sma bmt
+packIso :: forall m s t a b. Monad m => (s -> m a, b -> m t) -> SemiIso m s t a b
+packIso (sma, bmt) = semiIso sma bmt
 
 -- Apply a semiiso (this is just a part of unpackSemiIso)
 -- This could be "fst . unpackSemiIso", but this is more efficient:
@@ -268,13 +285,27 @@ unapplySemiIso siso = let
     bmit :: b -> m (Identity t)
     Exchange sma bmit = siso exchangeZero
     in fmap runIdentity . bmit
--- unapplySemiIso = applySemiIso . reverseSemiIso
+-- unapply = apply . reverseSemiIso
 
 -- Reverse a SemiIso
 -- If you think of it as a tuple (s -> m a, b -> m t), then reverse = swap
-reverseSemiIso :: forall m s t a b. Monad m => SemiIso m s t a b -> SemiIso m b a t s
+reverseIso :: forall m s t a b. Monad m => SemiIso m s t a b -> SemiIso m b a t s
 --reverseSemiIso :: forall m s t a b. Monad m =>
 --        forall p f. (Exposed m p, Traversable f) => p a (f b) -> p s (f t)
 --    ->  forall p f. (Exposed m p, Traversable f) => p t (f s) -> p b (f a)
-reverseSemiIso = packSemiIso . swap . unpackSemiIso
+reverseIso = packIso . swap . unpackIso
 -- TODO: Can we make this more efficient somehow?
+
+----------------------------------------------------------------------------------------------------
+
+newtype ReifiedSemiIso m s t a b = ReifiedSemiIso { _rawSemiIso :: SemiIso m s t a b }
+
+instance SemiIsomorphism ReifiedSemiIso where
+    packSemiIsomorphism :: forall m s t a b. (Monad m) => (s -> m a, b -> m t) -> ReifiedSemiIso m s t a b
+    packSemiIsomorphism tupl = ReifiedSemiIso (packIso tupl)
+    unpackSemiIsomorphism :: forall m s t a b.  (Monad m) => ReifiedSemiIso m s t a b -> (s -> m a, b -> m t)
+    unpackSemiIsomorphism iso = unpackIso (_rawSemiIso iso)
+
+----------------------------------------------------------------------------------------------------
+-- Maybe we want a few simple versions where "m" is just Identity?
+
