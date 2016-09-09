@@ -6,7 +6,7 @@
 {-# LANGUAGE FlexibleContexts #-}           -- For Exposed (Either String) p
 {-# LANGUAGE FlexibleInstances #-}          -- For Exposed m (ExchangeM m a b)
 
-module SemiIso where
+module OldSemiIso where
 
 import Data.Functor.Identity
 import qualified Control.Category as Cat
@@ -109,9 +109,9 @@ data ExchangeM m a b s t = ExchangeM (s -> m a) (b -> m t)
 type Retail = ExchangeM (Either String)
 
 instance Functor m => Profunctor (ExchangeM m a b) where
-  dimap f g (ExchangeM sma bmt) = ExchangeM (sma . f) (fmap g . bmt)
-  lmap f (ExchangeM sma bmt) = ExchangeM (sma . f) bmt
-  rmap f (ExchangeM sma bmt) = ExchangeM sma (fmap f . bmt)
+    dimap f g (ExchangeM sma bmt) = ExchangeM (sma . f) (fmap g . bmt)
+    lmap f (ExchangeM sma bmt) = ExchangeM (sma . f) bmt
+    rmap f (ExchangeM sma bmt) = ExchangeM sma (fmap f . bmt)
 
 -- join from Control.Monad
 join :: Monad m => m (m a) -> m a
