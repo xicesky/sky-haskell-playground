@@ -1,6 +1,7 @@
 
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleContexts #-}           -- Required for handling SemiIsos (Non type-variable argument in the constraint)
+{-# LANGUAGE RankNTypes #-}                 -- Since we redefine apply and unapply
 
 module Sky.Lens.SemiIsoDemo where
 
@@ -9,6 +10,11 @@ import Data.Char (toUpper, toLower)
 import Control.Monad.Except
 
 import Sky.Isomorphism.SemiIso
+
+apply :: forall m s t a b. Monad m => SemiIso m s t a b -> s -> m a
+apply = applySemiIso
+unapply :: forall m s t a b. Monad m => SemiIso m s t a b -> b -> m t
+unapply = unapplySemiIso
 
 -- Let's do a simple semi-isomorphism:
 -- Transform strings between "all lowercase" and "all uppercase"

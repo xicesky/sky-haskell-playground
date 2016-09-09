@@ -31,8 +31,8 @@ module Sky.Isomorphism.SemiIso
     ,   semiIso
     ,   unpackIso
     ,   packIso
-    ,   apply
-    ,   unapply
+    ,   applySemiIso
+    ,   unapplySemiIso
     ,   reverseIso
     ) where
 
