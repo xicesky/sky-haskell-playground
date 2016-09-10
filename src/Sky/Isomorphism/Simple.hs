@@ -75,3 +75,13 @@ instance Monad m => Category (MumuIso m) where
 instance SemiIsomorphism MumuIso where
     packSemiIsomorphism = MumuIso
     unpackSemiIsomorphism = _rawMumuIso
+
+----------------------------------------------------------------------------------------------------
+-- Ignore this!
+
+class IsoFunctor f where
+    isomap :: forall i m a b x. (SemiIsomorphism i, Monad m) => i m a b -> f m x a -> f m x b
+
+instance IsoFunctor MumuIso where
+    isomap :: forall i m a b x. (SemiIsomorphism i, Monad m) => i m a b -> MumuIso m x a -> MumuIso m x b
+    isomap isoA isoB = (convert isoA) . isoB where
