@@ -10,7 +10,8 @@ import Control.Category                     -- yay
 
 import Data.Tuple (swap)
 
--- Note: Isomorphisms should be instances of Category!
+-- Note: Isomorphisms should be instances of Category, but categories can't deal
+--  with polymorphic type changes.
 
 ----------------------------------------------------------------------------------------------------
 
@@ -30,14 +31,13 @@ class SemiIsomorphism i where
 ----------------------------------------------------------------------------------------------------
 
 data MumuIso m s t a b = MumuIso { _rawMumuIso :: (s -> m a, b -> m t) }
-type MumuIso' m s a = MumuIso m s s a a
 
--- This won't be easy
-
-instance Monad m => Category (MumuIso' m) where
-    id = MumuIso (id, id)
-    (MumuIso (applyF, unapplyF)) . (MumuIso (applyG, unapplyG)) =
-        MumuIso ((applyF . applyG), (unapplyG . unapplyF))
+-- Can't make this work...
+--type MumuIso' m s a = MumuIso m s s a a
+--instance Monad m => Category (MumuIso' m) where
+--    id = MumuIso (id, id)
+--    (MumuIso (applyF, unapplyF)) . (MumuIso (applyG, unapplyG)) =
+--        MumuIso ((applyF . applyG), (unapplyG . unapplyF))
 
 instance SemiIsomorphism MumuIso where
     packSemiIsomorphism = MumuIso
