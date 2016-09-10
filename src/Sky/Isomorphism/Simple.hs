@@ -6,7 +6,21 @@
 {-| Non-polymorphic semi-isomorphisms.
 -}
 
-module Sky.Isomorphism.Simple where
+module Sky.Isomorphism.Simple
+    ( SemiIsomorphism
+    , packSemiIsomorphism
+    , unpackSemiIsomorphism
+    , toSemiIsomorphism
+    , applySemiIsomorphism
+    , unapplySemiIsomorphism
+    , revertSemiIsomorphism
+    , convertSemiIsomorphism
+    , iso
+    , apply
+    , unapply
+    , convert
+    , MumuIso
+    ) where
 
 import Prelude hiding (id, (.))
 import Control.Category                     -- yay
@@ -30,8 +44,26 @@ class SemiIsomorphism i where
     unapplySemiIsomorphism = snd . unpackSemiIsomorphism
     revertSemiIsomorphism :: Monad m => i m a b -> i m b a
     revertSemiIsomorphism = packSemiIsomorphism . swap . unpackSemiIsomorphism
+    convertSemiIsomorphism :: (Monad m, SemiIsomorphism j) => j m a b -> i m a b
+    convertSemiIsomorphism = packSemiIsomorphism . unpackSemiIsomorphism
 
 ----------------------------------------------------------------------------------------------------
+-- Operators and stuff
+
+iso :: forall i m a b. (SemiIsomorphism i, Monad m) => (a -> m b) -> (b -> m a) -> i m a b
+iso = toSemiIsomorphism
+
+apply :: forall i m a b. (SemiIsomorphism i, Monad m) => i m a b -> a -> m b
+apply = applySemiIsomorphism
+
+unapply :: forall i m a b. (SemiIsomorphism i, Monad m) => i m a b -> b -> m a
+unapply = unapplySemiIsomorphism
+
+convert :: forall i j m a b. (SemiIsomorphism i, Monad m, SemiIsomorphism j) => i m a b -> j m a b
+convert = convertSemiIsomorphism
+
+----------------------------------------------------------------------------------------------------
+-- Simple semi-isomorphism
 
 newtype MumuIso m a b = MumuIso { _rawMumuIso :: (a -> m b, b -> m a) }
 
@@ -43,15 +75,3 @@ instance Monad m => Category (MumuIso m) where
 instance SemiIsomorphism MumuIso where
     packSemiIsomorphism = MumuIso
     unpackSemiIsomorphism = _rawMumuIso
-
-----------------------------------------------------------------------------------------------------
-
--- Operators and stuff
-iso :: forall i m a b. (SemiIsomorphism i, Monad m) => (a -> m b) -> (b -> m a) -> i m a b
-iso = toSemiIsomorphism
-
-apply :: forall i m a b. (SemiIsomorphism i, Monad m) => i m a b -> a -> m b
-apply = applySemiIsomorphism
-
-unapply :: forall i m a b. (SemiIsomorphism i, Monad m) => i m a b -> b -> m a
-unapply = unapplySemiIsomorphism
