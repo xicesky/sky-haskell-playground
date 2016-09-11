@@ -1,7 +1,6 @@
 
 {-# LANGUAGE InstanceSigs #-}               -- Because i love it
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeSynonymInstances #-}       -- Category (MumuIso' m)
 
 {-| Non-polymorphic semi-isomorphisms.
 -}
