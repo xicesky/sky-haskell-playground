@@ -4,7 +4,6 @@
 {-# LANGUAGE FlexibleInstances #-}          -- IsoFunctorStageOne (MumuIso Maybe x)
 {-# LANGUAGE MultiParamTypeClasses #-}      -- IsoFunctorStageTwo
 {-# LANGUAGE TypeFamilies #-}
---{-# LANGUAGE FunctionalDependencies #-}     -- IsoFunctorStageTwo
 
 
 {-| Non-polymorphic semi-isomorphisms.
