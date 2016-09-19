@@ -7,7 +7,7 @@
 {-# LANGUAGE TypeFamilies           #-}
 
 module Sky.Util.NewGraphLike
-    (
+    ( GraphLike
     ) where
 
 import Prelude hiding (lookup, (!!))
@@ -19,6 +19,9 @@ class (HasLookup c) => GraphLike c where
 
     --makeReference :: RefNameT c -> ValueT c
     makeReference :: KeyT c -> ValueT c
+
+----------------------------------------------------------------------------------------------------
+-- Demo
 
 data Expr r
     = Literal Int
