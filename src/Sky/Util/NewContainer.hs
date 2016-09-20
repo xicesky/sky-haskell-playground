@@ -20,7 +20,7 @@ module Sky.Util.NewContainer
     ) where
 -- The old one used functional dependencies, the new one uses type families
 
---------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
 {-
     This module tries to present an consistent interface for containers, specifically for
     Data.Set, Data.Map and Hash-* equivalents. Some functions from the prelude are redefined,
@@ -28,7 +28,7 @@ module Sky.Util.NewContainer
         import Prelude hiding (lookup, (!!))
         import Util.Container
 -}
---------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
 
 {- TODO:
     - This resembles the stuff from:
@@ -69,7 +69,7 @@ type HashSet v = HashSet.HashSet v
 type TreeMap k v = DataMap.Map k v
 type HashMap k v = HashMap.HashMap k v
 
----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
 
 class BaseContainer c where
     type ElemT c :: *
@@ -140,7 +140,7 @@ class MapFoldable m where
     foldrWithKey :: (k -> v -> a -> a) -> a -> m k v -> a
     foldlWithKey :: (a -> k -> v -> a) -> a -> m k v -> a
 
----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
 
 instance BaseContainer [v] where
     type ElemT [v] = v
@@ -201,7 +201,7 @@ instance MapFoldable ListAsMap where
         f' (k,v) a = f k v a
 -}
 
----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
 
 instance BaseContainer (TreeSet v) where
     type ElemT (TreeSet v) = v
@@ -226,7 +226,7 @@ instance (Ord v) => Intersectable (TreeSet v) where
 instance (Hashable v, Ord v) => Container (TreeSet v) where
     contains m v = DataSet.member v m
 
----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
 
 -- HashSet is missing Foldable
 
@@ -253,7 +253,7 @@ instance (Eq v, Hashable v) => Intersectable (HashSet v) where
 instance (Hashable v, Ord v) => Container (HashSet v) where
     contains m v = HashSet.member v m
 
----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
 
 instance BaseContainer (TreeMap k v) where
     type ElemT (TreeMap k v) = (k,v)
@@ -299,7 +299,7 @@ instance MapFoldable DataMap.Map where
     foldrWithKey = DataMap.foldrWithKey
     foldlWithKey = DataMap.foldlWithKey
 
----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
 
 instance BaseContainer (HashMap k v) where
     type ElemT (HashMap k v) = (k,v)
