@@ -5,29 +5,43 @@
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE GADTs                  #-}
 {-# LANGUAGE RankNTypes             #-}
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric          #-} -- Hashable
 
 module Sky.Parsing.Invertible2 where
 
 import Prelude hiding (lookup, (!!), print, (.), id)
-import Data.Functor.Identity
+
 import Control.Category
+import Control.Applicative (liftA2)
+
+import Data.Functor.Identity
 import Control.Monad (join)
 import Data.List (sort, intercalate)
 
+-- Hashable
+import GHC.Generics (Generic)
+
+-- Debug stuff
 import Debug.Trace
 import Data.Function ((&))
-import GHC.Generics (Generic)
 
 import Sky.Classes.Isomorphism.Monomorphic
 import Sky.Implementations.Isomorphism
 import Sky.Implementations.Isomorphism.MonoIso
 import Sky.Util.NewContainer
-import Sky.Util.NewGraphLike
+--import Sky.Util.NewGraphLike
+import Sky.Util.GraphMonad
 
-class (Show a, Eq a, Ord a, Hashable a) => D a
+----------------------------------------------------------------------------------------------------
+-- Shortcuts
+
+class (Show a, Typeable a, Eq a, Ord a, Hashable a) => D a
 instance D Char
 instance D a => D [a]
+-- where -- Sublime Text fucks up Haskell Syntax
+
+----------------------------------------------------------------------------------------------------
+-- Token recognition
 
 data TokenSet token
     = AnyToken
@@ -38,15 +52,93 @@ instance Hashable token => Hashable (TokenSet token)
 --instance (Show token, Eq token, Hashable token) => D (TokenSet token)
 
 -- More like regex, sets and sequences of tokens...
-data Syntax' token ast a where
-    Empty       :: Syntax' token ast a                                                      -- Fail
-    Pure        :: a -> Syntax' token ast a                                                 -- Generate a without input
-    Token       :: Iso token a -> TokenSet token -> Syntax' token ast a               -- Accept a certain set of tokens
-    Sequence    :: (D x, D y) => Iso (x,y) a -> Syntax' token ast x -> Syntax' token ast y -> Syntax' token ast a -- Sequence
-    Alternative :: (D x, D y) => Iso (Either x y) a -> Syntax' token ast x -> Syntax' token ast y -> Syntax' token ast a   -- Alternative
-    Reference   :: String -> Syntax' token ast ast                                          -- Call to a reference
 
-type Syntax token ast = HashMap String (Syntax' token ast ast)
+tokenSet :: (Ord a, Hashable a) => [a] -> TokenSet a
+tokenSet = SomeTokens . fromList
+
+----------------------------------------------------------------------------------------------------
+-- Syntax
+
+data Syntax' token a where
+    Empty       :: Syntax' token a                                                      -- Fail
+    Pure        :: a -> Syntax' token a                                                 -- Generate a without input
+    Token       :: Iso token a -> TokenSet token -> Syntax' token a                     -- Accept a certain set of tokens
+    Sequence    :: (D x, D y) => Iso (x,y) a -> Syntax' token x -> Syntax' token y -> Syntax' token a           -- Sequence
+    Alternative :: (D x, D y) => Iso (Either x y) a -> Syntax' token x -> Syntax' token y -> Syntax' token a    -- Alternative
+    ReferenceTo :: (D x) => Iso x a -> Reference String (Syntax' token x) -> Syntax' token a                    -- Call to a reference
+
+-- Our "Syntax" monad
+type SyntaxM token a = GraphT String Identity (Syntax' token a)
+
+--letRec :: (Monad m, RefName k, Typeable v) => k -> (Reference k v -> v) -> GraphT k m (Reference k v)
+
+define :: (Typeable token, D a) => String -> (Syntax' token a -> SyntaxM token a) -> SyntaxM token a
+define name inner = fmap (ReferenceTo id) $ letRec name (\ref -> inner (ReferenceTo id ref))
+
+define' :: (Typeable token, D a) => String -> Syntax' token a -> SyntaxM token a
+define' name = define name . const . return
+
+----------------------------------------------------------------------------------------------------
+-- Utilities for Syntax
+
+applyIso :: Iso a b -> Syntax' token a -> Syntax' token b
+applyIso f (Empty) = Empty
+applyIso f (Pure a) = Pure $ apply f a
+applyIso f (Token g recg) = Token (f . g) recg
+applyIso f (Sequence g a b) = Sequence (f . g) a b
+applyIso f (Alternative g a b) = Alternative (f . g) a b
+applyIso f (ReferenceTo g r) = ReferenceTo (f . g) r -- error $ "Cannot apply ismorphism to reference: " ++ getReferenceName r
+
+lit :: (Ord token, Hashable token) => token -> Syntax' token token
+lit a = Token (iso id id) (SingleToken a)
+
+many :: (Typeable token, D a) => String -> Syntax' token a -> SyntaxM token [a]
+many name single = define name $ \recMany -> return $
+    Alternative (isoAlt null) (Pure []) $ Sequence isoCons single recMany
+
+litLeft :: (D token, D a) => token -> Syntax' token a -> Syntax' token a
+litLeft x y = Sequence (isoFixedLeft x) (lit x) y
+
+litRight :: (D token, D a) => Syntax' token a -> token -> Syntax' token a
+litRight x y = Sequence (isoFixedRight y) x (lit y)
+
+between :: (D token, D a) => token -> token -> Syntax' token a -> Syntax' token a
+between x1 x2 y = x1 `litLeft` (y `litRight` x2)
+
+opNonAssoc :: (D token, D a, D b) => String -> Iso (a,a) b -> Syntax' token a -> token -> SyntaxM token b
+opNonAssoc name isoOp simple op = define' name $ Sequence isoOp simple $ litLeft op simple
+
+opLeftAssoc :: (D token, D a, D b, D e) => String -> Iso (e,a) b -> Iso (Either b a) e -> Syntax' token a -> token -> SyntaxM token e
+opLeftAssoc name isoOp isoDecide simple op =    -- LR: AddExpr = AddExpr Op Simple | Simple
+        define name $ \expr ->
+        return $ Alternative isoDecide (Sequence isoOp expr $ litLeft op simple) simple
+
+opAnyAssoc :: (D token, D a, D b, D e) => String -> Iso (e,e) b -> Iso (Either b a) e -> Syntax' token a -> token -> SyntaxM token e
+opAnyAssoc name isoOp isoDecide simple op =     -- LR: AddExpr = AddExpr Op AddExpr | Simple
+        define name $ \expr ->
+        return $ Alternative isoDecide (Sequence isoOp expr $ litLeft op expr) simple
+
+----------------------------------------------------------------------------------------------------
+-- More specific utilities
+
+parens :: forall ast a. (D a) => Syntax' Char a -> Syntax' Char a
+parens = between '(' ')'
+
+digit :: Syntax' Char Char
+digit = Token id $ tokenSet "0123456789"
+
+number :: SyntaxM Char DemoAST
+number = do
+    digits <- many "Digits" digit
+    return $ applyIso (iso toLiteral fromLiteral) digits
+    where
+        toLiteral :: String -> DemoAST
+        toLiteral = Literal . read
+        fromLiteral :: DemoAST -> String
+        fromLiteral (Literal i) = show i
+
+----------------------------------------------------------------------------------------------------
+-- AST
 
 data DemoAST
     = Literal Int
@@ -56,93 +148,79 @@ data DemoAST
 instance Hashable DemoAST
 instance D DemoAST
 
-tokenSet :: (Ord a, Hashable a) => [a] -> TokenSet a
-tokenSet = SomeTokens . fromList
-
-applyIso :: Iso a b -> Syntax' token ast a -> Syntax' token ast b
-applyIso f (Empty) = Empty
-applyIso f (Pure a) = Pure $ apply f a
-applyIso f (Token g recg) = Token (f . g) recg
-applyIso f (Sequence g a b) = Sequence (f . g) a b
-applyIso f (Alternative g a b) = Alternative (f . g) a b
-applyIso f (Reference name) = error $ "Cannot apply ismorphism to reference: " ++ name
-
-many :: D a => Syntax' tok ast a -> Syntax' tok ast [a]
-many single = Alternative (isoAlt null) (Pure []) $ Sequence isoCons single (many single)
-
-digit :: Syntax' Char ast Char
-digit = Token id $ tokenSet "0123456789"
-
-number :: Syntax' Char a DemoAST
-number = applyIso (iso toLiteral fromLiteral) (many digit) where
-    toLiteral :: String -> DemoAST
-    toLiteral = Literal . read
-    fromLiteral :: DemoAST -> String
-    fromLiteral (Literal i) = show i
-
---number :: Syntax' String a Int
---number = 
-
-numberAST :: Syntax' String DemoAST DemoAST
-numberAST = applyIso (iso Literal (\(Literal i) -> i)) (Token (iso read show) (tokenSet $ map return "0123456789"))
-
-lit :: (Ord a, Hashable a) => a -> Syntax' a ast a
-lit a = Token (iso id id) (SingleToken a)
-
-parens :: forall ast a. (D a) => Syntax' String ast a -> Syntax' String ast a
-parens x = Sequence (isoFixedLeft "(") (lit "(") (Sequence (isoFixedRight ")") x (lit ")"))
+-- Isomorphisms for AST
 
 isoAdd :: Iso (DemoAST, DemoAST) DemoAST
-isoAdd = iso (\(a,b) -> Add a b) (\x -> traceShow x $ x & \(Add a b) -> (a, b))
+isoAdd = iso (\(a,b) -> Add a b) (\(Add a b) -> (a, b)) -- (\x -> traceShow x $ x & \(Add a b) -> (a, b))
 
-addExpr :: Syntax' String DemoAST DemoAST
-addExpr = Sequence isoAdd (Reference "Simple") (Sequence (isoFixedLeft "+") (lit "+") (Reference "Simple"))
+isoIsLiteral :: Iso (Either DemoAST DemoAST) DemoAST
+isoIsLiteral = isoAlt isLiteral where
+    isLiteral :: DemoAST -> Bool
+    isLiteral (Literal _) = True
+    isLiteral _           = False
 
-isLiteral :: DemoAST -> Bool
-isLiteral (Literal _) = True
-isLiteral _           = False
+isoIsAdd :: Iso (Either DemoAST DemoAST) DemoAST
+isoIsAdd = isoAlt isAdd where
+    isAdd :: DemoAST -> Bool
+    isAdd (Add _ _) = True
+    isAdd _         = False
 
-isAdd :: DemoAST -> Bool
-isAdd (Add _ _) = True
-isAdd _         = False
+----------------------------------------------------------------------------------------------------
+-- "Pretty" printer
 
-demoSyntax :: Syntax String DemoAST
-demoSyntax = fromList
-    [ ("Literal"    , numberAST)
-    , ("Simple"     , Alternative (isoAlt isLiteral) (Reference "Literal") (parens (Reference "Expr")))
-    , ("Expr"       , Alternative (isoAlt isAdd) (addExpr) (Reference "Simple"))
-    ]
+print :: forall token a. (Typeable token, D a) => Syntax' token a -> a -> GraphT String Identity (Maybe [token])
+print (Empty)                 _   = return Nothing -- & trace "Empty"
+print (Token iso _)           ast = return $ Just $ [unapply iso ast] -- & trace "Token"
+print (Pure ast2)             ast = return $ if (ast == ast2) then Just [] else Nothing -- & trace "Pure"
+print (Sequence iso sa sb)    ast = do
+        (a, b) <- return $ unapply iso ast -- & trace "Sequence"
+        -- (liftA2.liftA2) (++) (print sa a) (print sb b)   -- short (unreadable) version
+        pa <- print sa a
+        pb <- print sb b
+        return $ (++) <$> pa <*> pb     -- Combine two "Maybe String" values using (++)
+print (Alternative iso sa sb) ast = case unapply iso ast -- & trace "Alternative"
+        of
+        Left x -> print sa x
+        Right y -> print sb y
+print (ReferenceTo iso r)     ast = do
+        ast' <- return $ unapply iso ast
+        real <- resolveReference r
+        print real $ ast'
+            & trace ("Reference " ++ getReferenceName r ++ ": " ++ show ast')
 
-demoAST = (Literal 2) `Add` (Literal 3 `Add` Literal 4)
---demoString = ["2", "+", "3"]
+print' :: (Typeable token, D a) => SyntaxM token a -> a -> Maybe [token]
+print' syntax expr = runIdentity $ evalGraphT $ do
+    entry <- syntax
+    print entry expr
 
-print :: (D ast, D a) => Syntax token ast -> Syntax' token ast a -> a -> Maybe [token]
-print syn   (Empty)                 _   | trace "Empty" True = Nothing
-print syn   (Token iso _)           ast | trace "Token" True = Just $ [unapply iso ast]
-print syn   (Pure ast2)             ast | trace "Pure" True = if (ast == ast2) then Just [] else Nothing
-print syn   (Sequence iso sa sb)    ast | trace "Sequence" True = do
-        (a, b) <- return $ unapply iso ast
-        pa <- print syn sa a
-        pb <- print syn sb b
-        return (pa ++ pb)
-print syn   (Alternative iso sa sb) ast | trace "Alternative" True = case unapply iso ast of
-        Left x -> print syn sa x
-        Right y -> print syn sb y
---print syn   (Name _ a)                ast = print a ast
-print syn   (Reference name)        ast | trace ("Reference " ++ name ++ ": " ++ show ast) True = print syn (syn !! name) ast
+----------------------------------------------------------------------------------------------------
 
-grammar1 :: (D token) => Syntax' token ast a -> String
-grammar1 (Empty)             = "(Fail)"
-grammar1 (Token _ toks)       = case toks of
-    AnyToken        -> "."
-    SomeTokens set  -> intercalate "|" $ fmap show $ sort $ toList set
-    SingleToken tok -> show tok
-grammar1 (Pure _)            = "(Pure)"
-grammar1 (Sequence _ a b)    = grammar1 a ++ " " ++ grammar1 b
-grammar1 (Alternative _ a b) = grammar1 a ++ " | " ++ grammar1 b
-grammar1 (Reference name)    = name
+demoSyntax :: SyntaxM Char DemoAST
+demoSyntax = define "Expr" $ \expr -> do
+    literal <- number
+    simple <- define' "Simple" $ Alternative isoIsLiteral literal (parens expr)
+    --addExpr <- opNonAssoc "AddExpr" isoAdd simple '+'
+    addExpr <- opAnyAssoc "AddExpr" isoAdd isoIsAdd simple '+'
+    return $ addExpr -- Alternative isoIsAdd addExpr simple
 
-grammar :: forall token ast. (D token, D ast) => Syntax token ast -> String
-grammar syn = join $ map rule $ toList syn where
-    rule :: (String, Syntax' token ast a) -> String
-    rule (name, g) = name ++ " = " ++ grammar1 g ++ "\n"
+demoAST :: DemoAST
+demoAST = (Literal 1 `Add` Literal 2) `Add` (Literal 3 `Add` Literal 4)
+
+demoString :: String
+demoString = "2+(3+4)"
+
+--grammar1 :: (D token) => Syntax' token ast a -> String
+--grammar1 (Empty)             = "(Fail)"
+--grammar1 (Token _ toks)       = case toks of
+--    AnyToken        -> "."
+--    SomeTokens set  -> intercalate "|" $ fmap show $ sort $ toList set
+--    SingleToken tok -> show tok
+--grammar1 (Pure _)            = "(Pure)"
+--grammar1 (Sequence _ a b)    = grammar1 a ++ " " ++ grammar1 b
+--grammar1 (Alternative _ a b) = grammar1 a ++ " | " ++ grammar1 b
+--grammar1 (Reference name)    = name
+
+--grammar :: forall token ast. (D token, D ast) => Syntax token ast -> String
+--grammar syn = join $ map rule $ toList syn where
+--    rule :: (String, Syntax' token ast a) -> String
+--    rule (name, g) = name ++ " = " ++ grammar1 g ++ "\n"
