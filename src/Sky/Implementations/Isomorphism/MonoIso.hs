@@ -33,8 +33,19 @@ isoAlternative decision = iso joinAlt splitAlt where
 isoAlt :: forall a. (a -> Bool) -> Iso (Either a a) a
 isoAlt = isoAlternative
 
+--isoEither :: Iso a b -> Iso (Either a b) (a, Bool)
+
 isoFixedRight :: b -> Iso (a,b) a
 isoFixedRight fixed = iso (\(a,b) -> a) (\a -> (a, fixed))
 
 isoFixedLeft :: a -> Iso (a,b) b
 isoFixedLeft fixed = iso (\(a,b) -> b) (\b -> (fixed, b))
+
+--isoSwap :: Iso (Either a b) (Either b a)
+--isoRebalance :: Iso (Either (Either a b) c) (Either a (Either b c))
+
+--isoSum :: Iso a b -> Iso c d -> Iso (Either a b) (Either c d)
+--endoIso :: Iso a b -> Iso (Either a b) (Either a b)
+
+-- "Functors preserve isomorphisms"
+--isoFun :: Functor f => Iso a b -> Iso (f a) (f b)
