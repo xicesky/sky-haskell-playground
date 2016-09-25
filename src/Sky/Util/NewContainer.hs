@@ -13,6 +13,7 @@ module Sky.Util.NewContainer
     ,   HasLookup(..)
     ,   MapLike(..)
     ,   MapFoldable(..)
+    ,   ContainerMappable(..)
     ,   TreeSet
     ,   HashSet
     ,   TreeMap
@@ -31,6 +32,8 @@ module Sky.Util.NewContainer
 ----------------------------------------------------------------------------------------------------
 
 {- TODO:
+    - Define ValueT for all containers, not only for "HasLookup"
+        - Then define ContainerMappable on ValueT, not on ElemT
     - This resembles the stuff from:
         https://hackage.haskell.org/package/collections-api-1.0.0.0/docs/Data-Collections.html
     - This module needs a lot of cleanup, since most of the stuff is fixed in base in the meantime:
@@ -55,9 +58,10 @@ import           Data.Foldable       hiding (toList)
 import           Data.Maybe
 import           Data.Monoid
 
-import           Data.Map            (Map)
+import qualified Data.List
+--import           Data.Map            (Map)
 import qualified Data.Map            as DataMap
-import           Data.Set            (Set)
+--import           Data.Set            (Set)
 import qualified Data.Set            as DataSet
 
 import           Data.Hashable
@@ -72,7 +76,9 @@ type HashMap k v = HashMap.HashMap k v
 ----------------------------------------------------------------------------------------------------
 
 class BaseContainer c where
-    type ElemT c :: *
+    -- ElemT is not the value type, but the type a container would "toList" to.
+    -- E.g.: In a map "k -> v" this is (k,v).
+    type ElemT c :: *       
 
 class (BaseContainer c) => Constructible c where
     empty :: c
@@ -95,6 +101,9 @@ class (BaseContainer c) => Collapseable c where
     isEmpty c = Prelude.null (elements c)
     toList :: c -> [ElemT c]
     toList = elements
+    -- Implement for performance on ordered containers
+    toAscList :: Ord (ElemT c) => c -> [ElemT c]
+    toAscList = Data.List.sort . toList
 
 class (BaseContainer c) => Intersectable c where
     {- Note: These functions may be left-biased, e.g. for maps, they do not
@@ -140,6 +149,15 @@ class MapFoldable m where
     foldrWithKey :: (k -> v -> a -> a) -> a -> m k v -> a
     foldlWithKey :: (a -> k -> v -> a) -> a -> m k v -> a
 
+class (BaseContainer c, BaseContainer d) => ContainerMappable c d where
+    -- Like the functor fmap, but works for containers with restrictions on the element type    
+    cmap :: (ElemT c -> ElemT d) -> c -> d
+
+{-  -- This would require OverlappingInstances
+    instance (Prelude.Functor f, BaseContainer (f a), BaseContainer (f b), a ~ ElemT (f a), b ~ ElemT (f b)) => ContainerMappable (f a) (f b) where
+        cmap = Prelude.fmap
+-}
+
 ----------------------------------------------------------------------------------------------------
 
 instance BaseContainer [v] where
@@ -171,6 +189,9 @@ instance HasLookup [v] where
     lookup i l = if (i < 0) Prelude.|| (i >= size l)
         then Nothing
         else Just $ (Prelude.!!) l i
+
+instance ContainerMappable [a] [b] where
+    cmap = Prelude.fmap
 
 {-
 type List v = [] v
@@ -218,6 +239,7 @@ instance Collapseable (TreeSet v) where
     size = DataSet.size
     isEmpty = DataSet.null
     toList = DataSet.toList
+    toAscList = DataSet.toAscList
 
 instance (Ord v) => Intersectable (TreeSet v) where
     union a b = DataSet.union a b
@@ -225,6 +247,9 @@ instance (Ord v) => Intersectable (TreeSet v) where
 
 instance (Hashable v, Ord v) => Container (TreeSet v) where
     contains m v = DataSet.member v m
+
+instance (Ord b) => ContainerMappable (TreeSet a) (TreeSet b) where
+    cmap = DataSet.map
 
 ----------------------------------------------------------------------------------------------------
 
@@ -245,6 +270,7 @@ instance Collapseable (HashSet v) where
     size = HashSet.size
     isEmpty = HashSet.null
     toList = HashSet.toList
+    --toAscList = HashSet.toAscList -- HashSet is unordered, resp, orders by hash
 
 instance (Eq v, Hashable v) => Intersectable (HashSet v) where
     union a b = HashSet.union a b
@@ -252,6 +278,9 @@ instance (Eq v, Hashable v) => Intersectable (HashSet v) where
 
 instance (Hashable v, Ord v) => Container (HashSet v) where
     contains m v = HashSet.member v m
+
+instance (Hashable b, Ord b) => ContainerMappable (HashSet a) (HashSet b) where
+    cmap = HashSet.map
 
 ----------------------------------------------------------------------------------------------------
 
@@ -299,6 +328,10 @@ instance MapFoldable DataMap.Map where
     foldrWithKey = DataMap.foldrWithKey
     foldlWithKey = DataMap.foldlWithKey
 
+-- Not yet, see TODO. This would remap your keys, too!
+--instance (Ord b) => ContainerMappable (TreeMap ka a) (TreeMap kb b) where
+--    cmap = ...
+
 ----------------------------------------------------------------------------------------------------
 
 instance BaseContainer (HashMap k v) where
@@ -345,3 +378,7 @@ instance MapFoldable HashMap.HashMap where
     mapWithKey = HashMap.mapWithKey
     foldrWithKey = HashMap.foldrWithKey
     foldlWithKey = HashMap.foldlWithKey'
+
+-- Not yet, see TODO. This would remap your keys, too!
+--instance (Ord b) => ContainerMappable (HashMap ka a) (HashMap kb b) where
+--    cmap = ...
