@@ -20,6 +20,9 @@ import qualified Control.Category as Cat
 
 type Iso a b = PackedMonoSemiIso Identity a b
 
+isoConst :: a -> b -> Iso a b
+isoConst a b = iso (const b) (const a)
+
 isoCons :: Iso (a, [a]) [a]
 isoCons = iso (\(x,xs) -> x:xs) (\(x:xs) -> (x,xs))
 
