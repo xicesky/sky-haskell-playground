@@ -1,7 +1,7 @@
 
 {-# LANGUAGE FlexibleInstances #-}
 
-module FunctionMonoid where
+module Sky.Useless.FunctionMonoid where
 
 -- Need a newtype because we clash with the instance Monoid b => Monoid (a -> b) defined in ‘GHC.Base’
 newtype Endo a = Endo (a -> a)
