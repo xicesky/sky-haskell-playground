@@ -7,9 +7,11 @@
 
 module Sky.Util.NewContainer
     (    module Data.Hashable
+    ,   BaseContainer(..)
     ,   Constructible(..)
     ,   Collapseable(..)
     ,   Intersectable(..)
+    ,   Container(..)
     ,   HasLookup(..)
     ,   MapLike(..)
     ,   MapFoldable(..)
@@ -114,7 +116,14 @@ class (BaseContainer c) => Intersectable c where
     intersection :: c -> c -> c
     --intersection a b = fromList $ Prelude.filter (b `contains`) (toList a)
 
+class (Intersectable c) => Diffable c where
+    difference :: c -> c -> c
+    --difference a b = fromList $ Prelude.filter (\x -> not $ b `contains` x) (toList a)
+    symmetricDifference :: c -> c -> c
+    symmetricDifference a b = union (difference a b) (difference b a)
+
 class (Constructible c, Collapseable c, Intersectable c) => Container c where
+    -- Note: We do not require diffable, not all containers support it
     contains :: c -> ElemT c -> Bool
     --contains c v = not $ isEmpty $ intersection c $ singleton v
 
@@ -177,8 +186,12 @@ instance Collapseable [v] where
     toList = Prelude.id
 
 instance (Eq v) => Intersectable [v] where
-    union a b = a ++ b -- nub!?
-    intersection a b = Prelude.filter (b `contains`) a
+    union = Data.List.union             -- no nub for efficiency
+    intersection = Data.List.intersect  -- no nub for efficiency
+    --intersection a b = Prelude.filter (b `contains`) a
+
+instance (Eq v) => Diffable [v] where
+    difference = (Data.List.\\)
 
 instance (Eq v) => Container [v] where
     contains l v = Prelude.elem v l
@@ -242,10 +255,13 @@ instance Collapseable (TreeSet v) where
     toAscList = DataSet.toAscList
 
 instance (Ord v) => Intersectable (TreeSet v) where
-    union a b = DataSet.union a b
-    intersection a b = DataSet.intersection a b
+    union = DataSet.union
+    intersection = DataSet.intersection
 
-instance (Hashable v, Ord v) => Container (TreeSet v) where
+instance (Ord v) => Diffable (TreeSet v) where
+    difference = DataSet.difference
+
+instance (Ord v) => Container (TreeSet v) where
     contains m v = DataSet.member v m
 
 instance (Ord b) => ContainerMappable (TreeSet a) (TreeSet b) where
@@ -276,6 +292,9 @@ instance (Eq v, Hashable v) => Intersectable (HashSet v) where
     union a b = HashSet.union a b
     intersection a b = HashSet.intersection a b
 
+instance (Eq v, Hashable v) => Diffable (HashSet v) where
+    difference = HashSet.difference
+
 instance (Hashable v, Ord v) => Container (HashSet v) where
     contains m v = HashSet.member v m
 
@@ -304,6 +323,9 @@ instance Collapseable (TreeMap k v) where
 instance (Ord k) => Intersectable (TreeMap k v) where
     union a b = DataMap.union a b
     intersection a b = DataMap.intersection a b
+
+instance (Ord k) => Diffable (TreeMap k v) where
+    difference = DataMap.difference
 
 instance (Ord k, Eq v) => Container (TreeMap k v) where
     contains m (k,v) = case DataMap.lookup k m of
@@ -355,6 +377,9 @@ instance Collapseable (HashMap k v) where
 instance (Eq k, Hashable k) => Intersectable (HashMap k v) where
     union a b = HashMap.union a b
     intersection a b = HashMap.intersection a b
+
+instance (Eq k, Hashable k) => Diffable (HashMap k v) where
+    difference = HashMap.difference
 
 instance (Hashable k, Ord k, Eq v) => Container (HashMap k v) where
     contains m (k,v) = case HashMap.lookup k m of
