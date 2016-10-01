@@ -6,7 +6,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE PolyKinds #-}
 
-module Sky.Ideas where
+module Sky.Ideas.TypeIso where
 
 -- Can we use type families to define isomorphisms on types?
 
