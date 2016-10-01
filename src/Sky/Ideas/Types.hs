@@ -21,7 +21,7 @@
     expects.
 -}
 
-module Sky.Types where
+module Sky.Ideas.Types where
 
 import Prelude hiding (lookup, (!!), (<), (>), (<=), (>=))
 import qualified Data.Ord as Ord
