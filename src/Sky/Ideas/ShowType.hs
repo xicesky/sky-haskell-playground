@@ -2,7 +2,7 @@
 {-# LANGUAGE InstanceSigs #-}               -- Because i love it
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Sky.ShowType where
+module Sky.Ideas.ShowType where
 
 -- Shows type of an argument
 -- Does not work for polymorphic types of course!
