@@ -115,6 +115,8 @@ class (BaseContainer c) => Intersectable c where
     --union a b = fromList $ (toList a) ++ (toList b)
     intersection :: c -> c -> c
     --intersection a b = fromList $ Prelude.filter (b `contains`) (toList a)
+    disjunct :: c -> c -> Bool
+    --disjunct a b = isEmpty (intersection a b)
 
 class (Intersectable c) => Diffable c where
     difference :: c -> c -> c
@@ -189,6 +191,7 @@ instance (Eq v) => Intersectable [v] where
     union = Data.List.union             -- no nub for efficiency
     intersection = Data.List.intersect  -- no nub for efficiency
     --intersection a b = Prelude.filter (b `contains`) a
+    disjunct a b = isEmpty (intersection a b)
 
 instance (Eq v) => Diffable [v] where
     difference = (Data.List.\\)
@@ -257,6 +260,7 @@ instance Collapseable (TreeSet v) where
 instance (Ord v) => Intersectable (TreeSet v) where
     union = DataSet.union
     intersection = DataSet.intersection
+    disjunct a b = isEmpty (intersection a b)
 
 instance (Ord v) => Diffable (TreeSet v) where
     difference = DataSet.difference
@@ -291,6 +295,7 @@ instance Collapseable (HashSet v) where
 instance (Eq v, Hashable v) => Intersectable (HashSet v) where
     union a b = HashSet.union a b
     intersection a b = HashSet.intersection a b
+    disjunct a b = isEmpty (intersection a b)
 
 instance (Eq v, Hashable v) => Diffable (HashSet v) where
     difference = HashSet.difference
@@ -323,6 +328,7 @@ instance Collapseable (TreeMap k v) where
 instance (Ord k) => Intersectable (TreeMap k v) where
     union a b = DataMap.union a b
     intersection a b = DataMap.intersection a b
+    disjunct a b = isEmpty (intersection a b)
 
 instance (Ord k) => Diffable (TreeMap k v) where
     difference = DataMap.difference
@@ -377,6 +383,7 @@ instance Collapseable (HashMap k v) where
 instance (Eq k, Hashable k) => Intersectable (HashMap k v) where
     union a b = HashMap.union a b
     intersection a b = HashMap.intersection a b
+    disjunct a b = isEmpty (intersection a b)
 
 instance (Eq k, Hashable k) => Diffable (HashMap k v) where
     difference = HashMap.difference
