@@ -25,9 +25,13 @@ data Example
     --  ...
     deriving (Show, Data)
 
-makeIsomorphism "example1'" [|Example1|]
+-- Method A: Create all isomorphisms using a namer
 makeIsomorphisms ''Example defaultIsoNamer
 
+-- Method B: Make a single isomorphism with a given name
+makeIsomorphism "example1'" [|Example1|]
+
+-- Method C: Manually define isomorphisms, using TH for the impl only
 exampleM1 :: Iso () Example
 exampleM1 = $(isoConstr 'Example1)
 
@@ -42,26 +46,6 @@ exampleM4 = $(isoConstr 'Example4)
 
 exampleM5 :: Iso (Int, Int) Example
 exampleM5 = $(isoConstr '(:~:))
-
-{-
-example1Custom :: Iso Example ()
-example1Custom = partialIso (Example1 {}) forward backward where
-    forward (Example1)  = ()
-    forward _           = error $ "Partial iso"
-    backward ()         = Example1
-
-example2Custom :: Iso Example Int
-example2Custom = partialIso (Example2 {}) forward backward where
-    forward (Example2 i) = i
-    forward _           = error $ "Partial iso"
-    backward i          = Example2 i
-
-example3Custom :: Iso Example (Int, Int)
-example3Custom = partialIso (Example3 {}) forward backward where
-    forward (Example3 i j) = (i, j)
-    forward _           = error $ "Partial iso"
-    backward (i, j)     = Example3 i j
--}
 
 eval :: a -> String
 eval !a = "Ok."
