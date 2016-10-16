@@ -20,7 +20,8 @@ data Example
     = Example1
     | Example2 Int
     | Example3 Int Int
-    -- | Example4 { a :: Int, b :: Bool, c :: String }
+    | Example4 { a :: Int, b :: Bool, c :: String }
+    | Int :~: Int
     --  ...
     deriving (Show, Data)
 
@@ -35,6 +36,12 @@ exampleM2 = $(isoConstr 'Example2)
 
 exampleM3 :: Iso (Int, Int) Example
 exampleM3 = $(isoConstr 'Example3)
+
+exampleM4 :: Iso (Int, Bool, String) Example
+exampleM4 = $(isoConstr 'Example4)
+
+exampleM5 :: Iso (Int, Int) Example
+exampleM5 = $(isoConstr '(:~:))
 
 {-
 example1Custom :: Iso Example ()
