@@ -141,6 +141,28 @@ partialIsoR dConstr forward backward = Iso (forward, backward) (basicType (Proxy
 --partialIsoR dConstr forward backward = reverseIso $ partialIso dConstr backward forward
 
 ----------------------------------------------------------------------------------------------------
+-- For invertible syntax parsing we need:
+
+-- A "failure" isomorphism
+-- TODO: The "parser" side should not accept anything
+isoFail :: String -> Iso a b
+isoFail e = iso (error e) (error e)
+
+-- An isomorphism between fixed values (i.e. "pure" & "token" for the parser)
+isoPure :: s -> a -> Iso s a
+isoPure s a = iso (const a) (const s)
+
+-- Alternative choice: Having parsed either "s" or "t", generate "a"
+-- this is just "addIso" for the partial isos above! (reversed, in this case)
+isoAlt :: Iso s a -> Iso t a -> Iso (Either s t) a
+isoAlt sa ta = reverseIso $ addIso (reverseIso sa) (reverseIso ta)
+
+-- Sequential combination
+-- TODO: Parse side needs to be able to make a choice (for determinism)
+isoSeq :: Iso [s] a -> Iso [s] b -> Iso [s] (a, b)
+isoSeq lsa lsb = error $ "TODO"
+
+----------------------------------------------------------------------------------------------------
 -- Debug
 
 checkIso :: Iso a b -> Iso a b
