@@ -4,7 +4,7 @@
 {-# LANGUAGE BangPatterns           #-}
 {-# LANGUAGE TemplateHaskell        #-}
 
-module Sky.Parsing.Invertible3.Grammar where
+module Sky.Parsing.Invertible3.TestIsos where
 
 import Prelude hiding (id, (.))
 import Control.Category (Category(..))
@@ -51,4 +51,4 @@ eval :: a -> String
 eval !a = "Ok."
 
 -- Run e.g.:
--- ghci -ddump-splices -XDeriveDataTypeable -XTemplateHaskell -isrc src/Sky/Parsing/Invertible3/Grammar.hs
+-- ghci -ddump-splices -XDeriveDataTypeable -XTemplateHaskell -isrc src/Sky/Parsing/Invertible3/TestIsos.hs

@@ -154,7 +154,7 @@ isoPure s a = iso (const a) (const s)
 
 -- Alternative choice: Having parsed either "s" or "t", generate "a"
 -- this is just "addIso" for the partial isos above! (reversed, in this case)
-isoAlt :: Iso s a -> Iso t a -> Iso (Either s t) a
+isoAlt :: (Data a) => Iso s a -> Iso t a -> Iso (Either s t) a
 isoAlt sa ta = reverseIso $ addIso (reverseIso sa) (reverseIso ta)
 
 -- Sequential combination
