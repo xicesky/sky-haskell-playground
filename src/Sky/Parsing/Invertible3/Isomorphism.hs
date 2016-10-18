@@ -18,7 +18,7 @@ import Sky.Parsing.Invertible3.PartialType
 ----------------------------------------------------------------------------------------------------
 
 -- class IsoError e where
---     errorSequentialCompo :: Iso e b c -> Iso e a b -> e
+--     errorComposition :: Iso e b c -> Iso e a b -> e
 --     showError :: e -> String
 
 class Category i => Isomorphism i where
@@ -31,7 +31,7 @@ class Category i => Isomorphism i where
 -- Implementation: Errors
 
 data IsoError
-    = SequentialCompositionError
+    = CompositionError
         { codomainLeft :: PartialType'
         , domainRight :: PartialType'
         }
@@ -41,19 +41,19 @@ data IsoError
         }
 
 -- instance IsoError DefaultIsoError where
---     errorSequentialCompo isoBC isoAB = SequentialCompositionError (_codomain isoAB) (_domain isoBC)
---     showError (SequentialCompositionError codom dom) = "Iso seq domain mismatch: " ++ show codom ++ " vs " ++ show dom
+--     errorComposition isoBC isoAB = CompositionError (_codomain isoAB) (_domain isoBC)
+--     showError (CompositionError codom dom) = "Iso composition domain mismatch: " ++ show codom ++ " vs " ++ show dom
 
-errorSequentialCompo :: Iso b c -> Iso a b -> IsoError
-errorSequentialCompo isoBC isoAB = SequentialCompositionError (_codomain isoAB) (_domain isoBC)
+errorComposition :: Iso b c -> Iso a b -> IsoError
+errorComposition isoBC isoAB = CompositionError (_codomain isoAB) (_domain isoBC)
 
 errorAddition :: Iso s a -> Iso s b -> IsoError
 errorAddition isoS1A isoS2B = IsoAdditionError (_domain isoS1A) (_domain isoS2B)
 --err = error $ "Iso sum domain clash: " ++ show (_domain isoS1A) ++ " vs " ++ show (_domain isoS2B)
 
 showError :: IsoError -> String
-showError (SequentialCompositionError codom dom) =
-    "Isomorphisms mismatch on sequential composition:\n"
+showError (CompositionError codom dom) =
+    "Isomorphisms mismatch on composition:\n"
     ++ "    The codomain of the first isomorphism:\n"
     ++ "        " ++ show codom ++ "\n"
     ++ "    doesn't match the domain of the second:\n"
@@ -90,7 +90,7 @@ instance Category (Iso) where
     (.) !isoBC !isoAB = if check then isoAC else err where
         check = _codomain isoAB == _domain isoBC
             -- & ( trace $ "Check " ++ (show $ _codomain isoAB) ++ " == " ++ (show $ _domain isoBC) )
-        err = Error $ errorSequentialCompo isoBC isoAB
+        err = Error $ errorComposition isoBC isoAB
         (bmc, cmb) = _rawIso isoBC
         (amb, bma) = _rawIso isoAB
         amc = bmc . amb
