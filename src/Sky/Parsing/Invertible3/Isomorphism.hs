@@ -35,7 +35,7 @@ data IsoError
         { codomainLeft :: PartialType'
         , domainRight :: PartialType'
         }
-    | AdditiveCompositionError
+    | IsoAdditionError
         { domain1 :: PartialType'
         , domain2 :: PartialType'
         }
@@ -47,8 +47,8 @@ data IsoError
 errorSequentialCompo :: Iso b c -> Iso a b -> IsoError
 errorSequentialCompo isoBC isoAB = SequentialCompositionError (_codomain isoAB) (_domain isoBC)
 
-errorAdditiveCompo :: Iso s a -> Iso s b -> IsoError
-errorAdditiveCompo isoS1A isoS2B = AdditiveCompositionError (_domain isoS1A) (_domain isoS2B)
+errorAddition :: Iso s a -> Iso s b -> IsoError
+errorAddition isoS1A isoS2B = IsoAdditionError (_domain isoS1A) (_domain isoS2B)
 --err = error $ "Iso sum domain clash: " ++ show (_domain isoS1A) ++ " vs " ++ show (_domain isoS2B)
 
 showError :: IsoError -> String
@@ -58,8 +58,8 @@ showError (SequentialCompositionError codom dom) =
     ++ "        " ++ show codom ++ "\n"
     ++ "    doesn't match the domain of the second:\n"
     ++ "        " ++ show dom ++ "\n"
-showError (AdditiveCompositionError dom1 dom2) =
-    "Isomorphisms mismatch on additive composition:\n"
+showError (IsoAdditionError dom1 dom2) =
+    "Isomorphisms mismatch on addition:\n"
     ++ "    The domain of the first isomorphism:\n"
     ++ "        " ++ show dom1 ++ "\n"
     ++ "    is not disjunct from the the domain of the second:\n"
@@ -112,7 +112,7 @@ instance Isomorphism (Iso) where
     addIso  _ (Error e) = Error e
     addIso isoS1A isoS2B = if check then Iso (forward, backward) newDomain newCodomain else err where
         check = disjunct (_domain isoS1A) (_domain isoS2B)
-        err = Error $ errorAdditiveCompo isoS1A isoS2B
+        err = Error $ errorAddition isoS1A isoS2B
         newDomain = (_domain isoS1A) `union` (_domain isoS2B)
         newCodomain = basicType (Proxy :: Proxy (Either a b))
 
