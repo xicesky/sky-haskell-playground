@@ -21,15 +21,19 @@ module Sky.Util.GraphMonad
     --, updateReference
     , getReferenceName
     , letRec
+    , resolveRefs
     ) where
 
 import Prelude hiding (lookup, (!!))
 import Data.Maybe
 import Data.Dynamic
 import Control.Monad.State.Strict
+
 import Sky.Util.NewContainer
+import Sky.Util.Graph
 
 data Reference k v = Reference k
+    deriving (Eq, Ord)
 
 newtype GraphState k = GraphState
     { graphMap :: HashMap k Dynamic
@@ -37,14 +41,6 @@ newtype GraphState k = GraphState
 
 type GraphT k m a = StateT (GraphState k) m a
 --type RefGenerator k = forall v. HashMap k v -> Maybe k -> k
-
-class (Show k, Monoid k, Ord k, Hashable k) => RefName k where
-    unnamed :: k
-    makeSuffix :: Int -> k
-
-instance RefName String where
-    unnamed = "unnamed"
-    makeSuffix = show
 
 --defaultRefGenerator :: RefGenerator String
 --defaultRefGenerator map suggestion = let
@@ -149,3 +145,13 @@ makeUnnamedReference value = do
         name <- gmGenerateUnnamed
         gmStore name value
         return (Reference name)
+
+resolveRefs :: forall m k v u. (Monad m, RefName k, Typeable u) => HashMap k v -> k -> ((k -> Reference k u) -> v -> u) -> GraphT k m (Reference k u)
+resolveRefs dataMap k dataTransform = foldlMWithKey storeRef () dataMap >>= \() -> return (Reference k)
+    where
+        checkRef :: k -> Reference k u
+        checkRef k = if k `isMemberOf` dataMap
+            then Reference k
+            else error $ "Referenced name " ++ show k ++ " not found."
+        storeRef :: () -> k -> v -> GraphT k m ()
+        storeRef () k v = gmStore k (dataTransform checkRef v)
