@@ -29,7 +29,7 @@ module Sky.Util.NewContainer
     Data.Set, Data.Map and Hash-* equivalents. Some functions from the prelude are redefined,
     so best import it like this:
         import Prelude hiding (lookup, (!!))
-        import Util.Container
+        import Sky.Util.NewContainer
 -}
 ----------------------------------------------------------------------------------------------------
 
@@ -59,6 +59,8 @@ import qualified Prelude
 import           Data.Foldable       hiding (toList)
 import           Data.Maybe
 import           Data.Monoid
+
+import           Control.Monad       (Monad (..))
 
 import qualified Data.List
 --import           Data.Map            (Map)
@@ -159,6 +161,11 @@ class MapFoldable m where
     --mapWithKey f m = fromList $ map (\(k,v) -> f
     foldrWithKey :: (k -> v -> a -> a) -> a -> m k v -> a
     foldlWithKey :: (a -> k -> v -> a) -> a -> m k v -> a
+    -- Monadic
+    foldlMWithKey :: forall a k v x. (Monad x) => (a -> k -> v -> x a) -> a -> m k v -> x a
+    foldlMWithKey f a0 m = foldrWithKey f' return m a0 where
+        f' :: k -> v -> (a -> x a) -> (a -> x a)
+        f' k v next a = f a k v >>= next
 
 class (BaseContainer c, BaseContainer d) => ContainerMappable c d where
     -- Like the functor fmap, but works for containers with restrictions on the element type    
