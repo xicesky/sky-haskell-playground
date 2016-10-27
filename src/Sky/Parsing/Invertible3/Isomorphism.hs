@@ -144,7 +144,7 @@ partialIsoR dConstr forward backward = Iso (forward, backward) (basicType (Proxy
 -- For invertible syntax parsing we need:
 
 -- A "failure" isomorphism
--- TODO: The "parser" side should not accept anything
+-- TODO: The "parser" side should not accept anything, this still has to compose (e.g. with alt)
 isoFail :: String -> Iso a b
 isoFail e = iso (error e) (error e)
 
@@ -161,6 +161,12 @@ isoAlt sa ta = reverseIso $ addIso (reverseIso sa) (reverseIso ta)
 -- TODO: Parse side needs to be able to make a choice (for determinism)
 isoSeq :: Iso [s] a -> Iso [s] b -> Iso [s] (a, b)
 isoSeq lsa lsb = error $ "TODO"
+
+-- Because it happens a lot and haskell would "do it wrong":
+isoSeqL :: Iso [s] a -> Iso [s] () -> Iso [s] a
+isoSeqL lsa lsb = error $ "TODO"
+isoSeqR :: Iso [s] () -> Iso [s] b -> Iso [s] b
+isoSeqR lsa lsb = error $ "TODO"
 
 ----------------------------------------------------------------------------------------------------
 -- Debug
