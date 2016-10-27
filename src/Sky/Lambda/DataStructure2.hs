@@ -108,6 +108,14 @@ lMap :: (a -> b) -> LMyList a -> LMyList b
 lMap f (WrapMyList l) = l lNil (\x xs -> lCons (f x) (lMap f xs))
 
 ----------------------------------------------------------------------------------------------------
+{- The rest doesn't compile with ghc 8 anymore:
+    Cannot instantiate unification variable ‘x0’
+    with a type involving foralls: LPreList Bool x
+    GHC doesn't yet support impredicative polymorphism
+-}
+
+{-
+----------------------------------------------------------------------------------------------------
 -- Combinations
 
 -- This will be useful later on (Do you know Data.Fix?)
@@ -185,4 +193,4 @@ examplePreList :: forall x. LPreList Bool (LPreList Bool (LPreList Bool x))
 examplePreList = plCons True $ plCons False $ plNil
 -- Oh, the type encodes the length of the list... we'll get to that later.
 
-
+-}

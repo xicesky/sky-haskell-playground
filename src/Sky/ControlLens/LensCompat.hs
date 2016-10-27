@@ -8,6 +8,7 @@ import Control.Lens.Internal.FieldTH (DefName(TopName))
 import Language.Haskell.TH.Syntax (Name, nameBase, mkName)
 import Language.Haskell.TH.Lib (DecsQ)
 
+{-
 -- Copied from lens-4.14 ---------------------------------------------------------------------------
 
 type FieldNamer = Name -- ^ Name of the data type that lenses are being generated for.
@@ -20,8 +21,9 @@ type FieldNamer = Name -- ^ Name of the data type that lenses are being generate
 mappingNamer :: (String -> [String]) -- ^ A function that maps a @fieldName@ to @lensName@s.
              -> FieldNamer
 mappingNamer mapper _ _ = fmap (TopName . mkName) . mapper . nameBase
+-}
 
--- Out definitions ---------------------------------------------------------------------------------
+-- Our definitions ---------------------------------------------------------------------------------
 
 directNamer :: FieldNamer
 directNamer = mappingNamer return
