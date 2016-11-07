@@ -3,6 +3,8 @@
 {-# LANGUAGE InstanceSigs           #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FlexibleInstances      #-}
+
+{-# LANGUAGE TypeOperators          #-}
 {-# LANGUAGE UndecidableInstances   #-}
 
 {- | Compositional data types
@@ -27,41 +29,53 @@ instance Eq (f (Term f)) => Eq (Term f) where
 
 ----------------------------------------------------------------------------------------------------
 
-data ExpS r
-    = Const Int
-    | Pair  r r
-    | Mult  r r
-    | Fst   r
+data (f :+: g) e
+    = Inl (f e)
+    | Inr (g e)
+
+----------------------------------------------------------------------------------------------------
+
+data Op e
+    = Mult e e
+    | Fst e
     deriving (Eq, Show)
 
-data ValueS r
-    = VConst Int
-    | VPair r r
+data Val e
+    = Const Int
+    | Pair e e
     deriving (Eq, Show)
+
+type ExpS = Val :+: Op
 
 type Exp = Term ExpS
-type Value = Term ValueS
+type Value = Term Val
 
-const' x    = Term $ Const x
-pair' x y   = Term $ Pair x y
-mult' x y   = Term $ Mult x y
-fst' x      = Term $ Fst x
+const' :: Int -> Exp
+const' x    = Term $ Inl $ Const x
+pair' :: Exp -> Exp -> Exp
+pair' x y   = Term $ Inl $ Pair x y
+mult' :: Exp -> Exp -> Exp
+mult' x y   = Term $ Inr $ Mult x y
+fst' :: Exp -> Exp
+fst' x      = Term $ Inr $ Fst x
 
-vconst' x   = Term $ VConst x
-vpair' x y  = Term $ VPair x y
+vconst' :: Int -> Value
+vconst' x   = Term $ Const x
+vpair' :: Value -> Value -> Value
+vpair' x y  = Term $ Pair x y
 
 ----------------------------------------------------------------------------------------------------
 -- Algebra
 
 eval :: Exp -> Value
-eval (Term (Const n))   = vconst' n
-eval (Term (Pair x y))  = vpair' (eval x) (eval y)
-eval (Term (Mult x y))  = let
-    (Term (VConst m))   = eval x
-    (Term (VConst n))   = eval y
+eval (Term (Inl (Const n)))     = vconst' n
+eval (Term (Inl (Pair x y)))    = vpair' (eval x) (eval y)
+eval (Term (Inr (Mult x y)))    = let
+    (Term (Const m))   = eval x
+    (Term (Const n))   = eval y
     in vconst' (m * n)
-eval (Term (Fst p))     = let
-    (Term (VPair x y))  = eval p
+eval (Term (Inr (Fst p)))       = let
+    (Term (Pair x y))  = eval p
     in x
 
 ----------------------------------------------------------------------------------------------------
