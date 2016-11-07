@@ -146,12 +146,6 @@ instance (Show (t1 r), Show (t2 r)) => Show (TPlus t1 t2 r) where
     show (TPlus (Left t1)) = show t1
     show (TPlus (Right t2)) = show t2
 
-data AttachedDebugInfo r = AttachedDebugInfo DebugInfo r
-    deriving (Eq, Show, Functor)
-
-type X3Expression n r = TPlus (X1Expression n) (AttachedDebugInfo) r
-type E3Expression n = Fix (TPlus (X1Expression n) (AttachedDebugInfo))
-
 class Embeddable t tsub where
     embed :: tsub -> t
 
@@ -169,10 +163,21 @@ instance Functor t2 => Embeddable (Fix (TPlus any t2)) (Fix t2) where
     embed :: Fix t2 -> Fix (TPlus any t2)
     embed = cata (Fix . embed)
 
+----------------------------------------------------------------------------------------------------
+
+data AttachedDebugInfo r = AttachedDebugInfo DebugInfo r
+    deriving (Eq, Show, Functor)
+
+type X3Expression n r = TPlus (X1Expression n) (AttachedDebugInfo) r
+type E3Expression n = Fix (TPlus (X1Expression n) (AttachedDebugInfo))
+
 -- Not done yet: We'd like to do this in general:
 
 -- attachDebugInfo :: DebugInfo -> r -> AttachedDebugInfo r
 -- attachDebugInfo di = AttachedDebugInfo di
+
+attachDebugInfo :: DebugInfo -> E3Expression n -> E3Expression n
+attachDebugInfo di = Fix . TPlus . Right . AttachedDebugInfo di
 
 ----------------------------------------------------------------------------------------------------
 -- Examples for playing around
@@ -188,3 +193,11 @@ e1example1 = (Fix . X1Variable) "a"
 
 e1example2 :: E1Expression String
 e1example2 = Fix $ X1Application ((Fix . X1Variable) "a") ((Fix . X1Variable) "b")
+
+----------------------------------------------------------------------------------------------------
+
+{- Of course, someone already did this:
+    http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.302.6303&rep=rep1&type=pdf
+    http://bahr.io/pubs/files/bahr11wgp-slides%20(full).pdf
+And https://hackage.haskell.org/package/compdata
+-}
