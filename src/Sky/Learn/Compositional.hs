@@ -33,6 +33,15 @@ data (f :+: g) e
     = Inl (f e)
     | Inr (g e)
 
+instance (Show (f e), Show (g e)) => Show ((f :+: g) e) where
+    show (Inl a) = show a
+    show (Inr a) = show a
+
+instance (Eq (f e), Eq (g e)) => Eq ((f :+: g) e) where
+    (Inl a) == (Inl b) = a == b
+    (Inr a) == (Inr b) = a == b
+    _ == _ = False
+
 ----------------------------------------------------------------------------------------------------
 
 data Op e
