@@ -6,6 +6,7 @@
 
 {-# LANGUAGE TypeOperators          #-}
 {-# LANGUAGE UndecidableInstances   #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
 
 {- | Compositional data types
 See http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.302.6303&rep=rep1&type=pdf
@@ -28,6 +29,7 @@ instance Eq (f (Term f)) => Eq (Term f) where
     (Term a) == (Term b) = a == b
 
 ----------------------------------------------------------------------------------------------------
+-- Datatype composition (Essentially "Either")
 
 data (f :+: g) e
     = Inl (f e)
@@ -44,15 +46,59 @@ instance (Eq (f e), Eq (g e)) => Eq ((f :+: g) e) where
 
 ----------------------------------------------------------------------------------------------------
 
+class f :<: g where
+    inj :: f a -> g a
+    proj :: g a -> Maybe (f a)
+
+instance f :<: f where
+    inj = id
+    proj = Just
+
+-- instance f :<: (f :+: g) where
+--     inj = Inl . inj
+--     proj (Inl f) = Just f
+--     proj (Inr _) = Nothing
+
+instance (f :<: g) => (f :<: (h :+: g)) where
+    inj = Inr . inj
+    proj (Inl _) = Nothing
+    proj (Inr g) = proj g
+
+{-
+-- This one doesn't work: "Duplicate instance declarations"
+instance (f :<: h) => (f :<: (h :+: g)) where
+    inj = Inl . inj
+    proj (Inl h) = proj h
+    proj (Inr _) = proj _
+-}
+
+inject :: (g :<: f) => g (Term f) -> Term f
+inject = Term . inj
+
+project :: (g :<: f) => Term f -> Maybe (g (Term f))
+project (Term t) = proj t
+
+----------------------------------------------------------------------------------------------------
+
 data Op e
     = Mult e e
     | Fst e
     deriving (Eq, Show)
 
+iFst :: (Op :<: f) => Term f -> Term f
+iFst x = inject (Fst x)
+iMult :: (Op :<: f) => Term f -> Term f -> Term f
+iMult x y = inject (Mult x y)
+
 data Val e
     = Const Int
     | Pair e e
     deriving (Eq, Show)
+
+iConst :: (Val :<: f) => Int -> Term f
+iConst x = inject (Const x)
+iPair :: (Val :<: f) => Term f -> Term f -> Term f
+iPair x y = inject (Pair x y)
 
 type ExpS = Val :+: Op
 
