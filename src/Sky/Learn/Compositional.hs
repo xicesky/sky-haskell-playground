@@ -109,15 +109,28 @@ const' :: Int -> Exp
 const' x    = Term $ Inl $ Const x
 pair' :: Exp -> Exp -> Exp
 pair' x y   = Term $ Inl $ Pair x y
+
+{- These won't work:
+    Our instance (f :<: g) => (f :<: (h :+: g)) implies that the smaller type "f" may
+    only occur on the right hand side of ":+:". Thus of course
+        (Op :<: ExpS) <= (Op :<: (Val :+: Op)) <= (Op :<: Op)
+    But this won't work for Val:
+        (Val :<: ExpS) <= (Val :<: (Val :+: Op)) <= (Val :<: Op)
+    And we get the following error:
+        No instance for (Val :<: Op) arising from a use of `iPair'
+-}
+--const'      = iConst
+--pair'       = iPair     
+
 mult' :: Exp -> Exp -> Exp
-mult' x y   = Term $ Inr $ Mult x y
+mult'       = iMult
 fst' :: Exp -> Exp
-fst' x      = Term $ Inr $ Fst x
+fst'        = iFst
 
 vconst' :: Int -> Value
-vconst' x   = Term $ Const x
+vconst'     = iConst
 vpair' :: Value -> Value -> Value
-vpair' x y  = Term $ Pair x y
+vpair'      = iPair
 
 ----------------------------------------------------------------------------------------------------
 -- Algebra
