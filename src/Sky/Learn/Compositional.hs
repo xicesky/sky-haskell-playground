@@ -54,23 +54,15 @@ instance f :<: f where
     inj = id
     proj = Just
 
--- instance f :<: (f :+: g) where
---     inj = Inl . inj
---     proj (Inl f) = Just f
---     proj (Inr _) = Nothing
+instance {-# OVERLAPPABLE #-} f :<: (f :+: g) where
+    inj = Inl . inj
+    proj (Inl f) = Just f
+    proj (Inr _) = Nothing
 
-instance (f :<: g) => (f :<: (h :+: g)) where
+instance {-# OVERLAPPABLE #-} (f :<: g) => (f :<: (h :+: g)) where
     inj = Inr . inj
     proj (Inl _) = Nothing
     proj (Inr g) = proj g
-
-{-
--- This one doesn't work: "Duplicate instance declarations"
-instance (f :<: h) => (f :<: (h :+: g)) where
-    inj = Inl . inj
-    proj (Inl h) = proj h
-    proj (Inr _) = proj _
--}
 
 inject :: (g :<: f) => g (Term f) -> Term f
 inject = Term . inj
@@ -106,21 +98,9 @@ type Exp = Term ExpS
 type Value = Term Val
 
 const' :: Int -> Exp
-const' x    = Term $ Inl $ Const x
+const'      = iConst
 pair' :: Exp -> Exp -> Exp
-pair' x y   = Term $ Inl $ Pair x y
-
-{- These won't work:
-    Our instance (f :<: g) => (f :<: (h :+: g)) implies that the smaller type "f" may
-    only occur on the right hand side of ":+:". Thus of course
-        (Op :<: ExpS) <= (Op :<: (Val :+: Op)) <= (Op :<: Op)
-    But this won't work for Val:
-        (Val :<: ExpS) <= (Val :<: (Val :+: Op)) <= (Val :<: Op)
-    And we get the following error:
-        No instance for (Val :<: Op) arising from a use of `iPair'
--}
---const'      = iConst
---pair'       = iPair     
+pair'       = iPair     
 
 mult' :: Exp -> Exp -> Exp
 mult'       = iMult
