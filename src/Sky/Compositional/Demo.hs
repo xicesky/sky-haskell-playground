@@ -46,12 +46,12 @@ iNeg = inject . Neg
 iSwap :: (Sug :<: f) => Term f -> Term f
 iSwap = inject . Swap
 
-type ExpS = Val :+: Op
-type ExpS' = Sug :+: ExpS
+type Exp = Val :+: Op
+type Exp' = Sug :+: Exp
 
-type Value = Term Val
-type Exp = Term ExpS
-type Exp' = Term ExpS'
+type VTerm = Term Val
+type ETerm = Term Exp
+type ETerm' = Term Exp'
 
 ----------------------------------------------------------------------------------------------------
 -- Algebra
@@ -80,40 +80,40 @@ instance Eval Op where
         (Pair x y)  -> y
         _           -> error "Blargh"
 
-eval :: Exp -> Value
+eval :: ETerm -> VTerm
 eval = cata evalAlg
 
 class Desug f where
-    desugAlg :: f (Term ExpS) -> Term ExpS
+    desugAlg :: f (Term Exp) -> Term Exp
 
 instance (Desug f, Desug g) => Desug (f :+: g) where
-    desugAlg :: (f :+: g) (Term ExpS) -> Term ExpS
+    desugAlg :: (f :+: g) (Term Exp) -> Term Exp
     desugAlg (Inl a) = desugAlg a
     desugAlg (Inr a) = desugAlg a
 
 instance Desug Val where
-    desugAlg :: Val (Term ExpS) -> Term ExpS
+    desugAlg :: Val (Term Exp) -> Term Exp
     desugAlg = inject
 
 instance Desug Op where
-    desugAlg :: Op (Term ExpS) -> Term ExpS
+    desugAlg :: Op (Term Exp) -> Term Exp
     desugAlg = inject
 
 instance Desug Sug where
-    desugAlg :: Sug (Term ExpS) -> Term ExpS
+    desugAlg :: Sug (Term Exp) -> Term Exp
     desugAlg (Neg x) = iConst (-1) `iMult` x
     desugAlg (Swap x) = iPair (iSnd x) (iFst x)
 
-desug :: Exp' -> Exp
+desug :: ETerm' -> ETerm
 desug = cata desugAlg
 
 ----------------------------------------------------------------------------------------------------
 -- Example
 
-expExample :: Exp
+expExample :: ETerm
 expExample = iFst (iPair (iConst 2) (iConst 3)) `iMult` iConst 5
 
-sugExample :: Exp'
+sugExample :: ETerm'
 sugExample = iFst (iSwap (iPair (iConst 3) (iConst 2))) `iMult` iConst 5
 
 main :: IO ()
