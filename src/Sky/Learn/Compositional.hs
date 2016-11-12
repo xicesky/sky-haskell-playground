@@ -4,6 +4,8 @@
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FlexibleInstances      #-}
 
+{-# LANGUAGE DeriveFunctor          #-}
+
 {-# LANGUAGE TypeOperators          #-}
 {-# LANGUAGE UndecidableInstances   #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
@@ -21,6 +23,9 @@ module Sky.Learn.Compositional where
 
 -- Initial f-Algebra
 data Term f = Term (f (Term f))
+
+unTerm :: Term f -> f (Term f)
+unTerm (Term x) = x
 
 instance Show (f (Term f)) => Show (Term f) where
     show (Term x) = "(" ++ show x ++ ")"
@@ -44,7 +49,12 @@ instance (Eq (f e), Eq (g e)) => Eq ((f :+: g) e) where
     (Inr a) == (Inr b) = a == b
     _ == _ = False
 
+instance (Functor f, Functor g) => Functor (f :+: g) where
+    fmap f (Inl a) = Inl $ fmap f a
+    fmap f (Inr a) = Inr $ fmap f a
+
 ----------------------------------------------------------------------------------------------------
+-- Subsumption, injection and projection
 
 class f :<: g where
     inj :: f a -> g a
@@ -71,11 +81,20 @@ project :: (g :<: f) => Term f -> Maybe (g (Term f))
 project (Term t) = proj t
 
 ----------------------------------------------------------------------------------------------------
+-- Catamorphism, Anamorphism
+
+cata :: Functor f => (f a -> a) -> (Term f -> a)
+cata f = f . fmap (cata f) . unTerm
+
+ana :: Functor f => (a -> f a) -> (a -> Term f)
+ana f = Term . fmap (ana f) . f
+
+----------------------------------------------------------------------------------------------------
 
 data Op e
     = Mult e e
     | Fst e
-    deriving (Eq, Show)
+    deriving (Eq, Show, Functor)
 
 iFst :: (Op :<: f) => Term f -> Term f
 iFst x = inject (Fst x)
@@ -85,7 +104,7 @@ iMult x y = inject (Mult x y)
 data Val e
     = Const Int
     | Pair e e
-    deriving (Eq, Show)
+    deriving (Eq, Show, Functor)
 
 iConst :: (Val :<: f) => Int -> Term f
 iConst x = inject (Const x)
@@ -115,16 +134,29 @@ vpair'      = iPair
 ----------------------------------------------------------------------------------------------------
 -- Algebra
 
+class Eval f where
+    evalAlg :: f (Term Val) -> Term Val
+
+instance Eval Val where
+    evalAlg :: Val (Term Val) -> Term Val
+    evalAlg = inject
+
+instance Eval Op where
+    evalAlg :: Op (Term Val) -> Term Val
+    evalAlg (Mult x y) = case (unTerm x, unTerm y) of
+        (Const m, Const n)  -> iConst (m * n)
+        _                   -> error "Argh"
+    evalAlg (Fst p) = case (unTerm p) of
+        (Pair x y)  -> x
+        _           -> error "Blargh"
+
+instance (Eval f, Eval g) => Eval (f :+: g) where
+    evalAlg :: (f :+: g) (Term Val) -> Term Val
+    evalAlg (Inl a) = evalAlg a
+    evalAlg (Inr a) = evalAlg a
+
 eval :: Exp -> Value
-eval (Term (Inl (Const n)))     = vconst' n
-eval (Term (Inl (Pair x y)))    = vpair' (eval x) (eval y)
-eval (Term (Inr (Mult x y)))    = let
-    (Term (Const m))   = eval x
-    (Term (Const n))   = eval y
-    in vconst' (m * n)
-eval (Term (Inr (Fst p)))       = let
-    (Term (Pair x y))  = eval p
-    in x
+eval = cata evalAlg
 
 ----------------------------------------------------------------------------------------------------
 -- Example
