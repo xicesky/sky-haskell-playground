@@ -15,23 +15,20 @@ import Sky.Compositional.Algebra
 
 ----------------------------------------------------------------------------------------------------
 
-data Op e
-    = Mult e e
-    | Fst e
-    | Snd e
-    deriving (Eq, Show, Functor)
-
-iFst :: (Op :<: f) => Term f -> Term f
-iFst x = inject (Fst x)
-iSnd :: (Op :<: f) => Term f -> Term f
-iSnd x = inject (Snd x)
-iMult :: (Op :<: f) => Term f -> Term f -> Term f
-iMult x y = inject (Mult x y)
-
 data Val e
     = Const Int
     | Pair e e
     deriving (Eq, Show, Functor)
+
+instance Foldable Val where
+    foldMap :: Monoid m => (a -> m) -> Val a -> m
+    foldMap f (Const _) = mempty
+    foldMap f (Pair x y) = (mempty `mappend` f x) `mappend` f y
+
+instance Traversable Val where
+    sequenceA :: Applicative f => Val (f a) -> f (Val a)
+    sequenceA (Const e) = pure (Const e)
+    sequenceA (Pair x y) = Pair <$> x <*> y
 
 iConst :: (Val :<: f) => Int -> Term f
 iConst x = inject (Const x)
@@ -43,6 +40,35 @@ projConst :: (Val :<: f) => Term f -> Int
 projConst v = case project v of Just (Const n) -> n
 projPair :: (Val :<: f) => Term f -> (Term f, Term f)
 projPair v = case project v of Just (Pair x y) -> (x, y)
+
+----------------------------------------------------------------------------------------------------
+
+data Op e
+    = Mult e e
+    | Fst e
+    | Snd e
+    deriving (Eq, Show, Functor)
+
+instance Foldable Op where
+    foldMap :: Monoid m => (a -> m) -> Op a -> m
+    foldMap f (Mult x y) = (mempty `mappend` f x) `mappend` f y
+    foldMap f (Fst x) = mempty `mappend` f x
+    foldMap f (Snd x) = mempty `mappend` f x
+
+instance Traversable Op where
+    sequenceA :: Applicative f => Op (f a) -> f (Op a)
+    sequenceA (Mult x y) = Mult <$> x <*> y
+    sequenceA (Fst x) = Fst <$> x
+    sequenceA (Snd x) = Snd <$> x
+
+iFst :: (Op :<: f) => Term f -> Term f
+iFst x = inject (Fst x)
+iSnd :: (Op :<: f) => Term f -> Term f
+iSnd x = inject (Snd x)
+iMult :: (Op :<: f) => Term f -> Term f -> Term f
+iMult x y = inject (Mult x y)
+
+----------------------------------------------------------------------------------------------------
 
 data Sug e
     = Neg e

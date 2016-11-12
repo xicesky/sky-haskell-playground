@@ -40,6 +40,8 @@ type CoAlg f a = a -> f a
 ----------------------------------------------------------------------------------------------------
 -- Datatype composition (Essentially "Either")
 
+infixr 6 :+:
+
 data (f :+: g) e
     = Inl (f e)
     | Inr (g e)
@@ -57,8 +59,20 @@ instance (Functor f, Functor g) => Functor (f :+: g) where
     fmap f (Inl a) = Inl $ fmap f a
     fmap f (Inr a) = Inr $ fmap f a
 
+instance (Foldable f, Foldable g) => Foldable (f :+: g) where
+    foldMap :: Monoid m => (a -> m) -> (f :+: g) a -> m
+    foldMap f (Inl a) = foldMap f a
+    foldMap f (Inr a) = foldMap f a
+
+instance (Traversable f, Traversable g) => Traversable (f :+: g) where
+    sequenceA :: Applicative x => (f :+: g) (x a) -> x ((f :+: g) a)
+    sequenceA (Inl a) = Inl <$> sequenceA a
+    sequenceA (Inr a) = Inr <$> sequenceA a
+
 ----------------------------------------------------------------------------------------------------
 -- Subsumption, injection and projection
+
+infixl 5 :<:
 
 class f :<: g where
     inj :: f a -> g a
