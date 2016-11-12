@@ -38,21 +38,6 @@ type ExpS = Val :+: Op
 type Exp = Term ExpS
 type Value = Term Val
 
-const' :: Int -> Exp
-const'      = iConst
-pair' :: Exp -> Exp -> Exp
-pair'       = iPair     
-
-mult' :: Exp -> Exp -> Exp
-mult'       = iMult
-fst' :: Exp -> Exp
-fst'        = iFst
-
-vconst' :: Int -> Value
-vconst'     = iConst
-vpair' :: Value -> Value -> Value
-vpair'      = iPair
-
 ----------------------------------------------------------------------------------------------------
 -- Algebra
 
@@ -84,7 +69,7 @@ eval = cata evalAlg
 -- Example
 
 expExample :: Exp
-expExample = (fst' (pair' (const' 2) (const' 3))) `mult'` (const' 5)
+expExample = iFst (iPair (iConst 2) (iConst 3)) `iMult` iConst 5
 
 main :: IO ()
 main = print $ eval expExample
