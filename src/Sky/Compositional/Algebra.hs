@@ -31,6 +31,12 @@ instance Show (f (Term f)) => Show (Term f) where
 instance Eq (f (Term f)) => Eq (Term f) where
     (Term a) == (Term b) = a == b
 
+-- | Algebra
+type Alg f a = f a -> a
+
+-- | Coalgebra
+type CoAlg f a = a -> f a
+
 ----------------------------------------------------------------------------------------------------
 -- Datatype composition (Essentially "Either")
 
