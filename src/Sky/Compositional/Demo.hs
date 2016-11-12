@@ -6,6 +6,7 @@
 
 {-# LANGUAGE DeriveFunctor          #-}
 {-# LANGUAGE TypeOperators          #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
 
 module Sky.Compositional.Demo where
 
@@ -56,19 +57,19 @@ type ETerm' = Term Exp'
 ----------------------------------------------------------------------------------------------------
 -- Algebra
 
-class Eval f where
-    evalAlg :: f (Term Val) -> Term Val
+class Eval f v where
+    evalAlg :: f v -> v
 
-instance (Eval f, Eval g) => Eval (f :+: g) where
-    evalAlg :: (f :+: g) (Term Val) -> Term Val
+instance (Eval f v, Eval g v) => Eval (f :+: g) v where
+    evalAlg :: (f :+: g) v -> v
     evalAlg (Inl a) = evalAlg a
     evalAlg (Inr a) = evalAlg a
 
-instance Eval Val where
+instance Eval Val (Term Val) where
     evalAlg :: Val (Term Val) -> Term Val
     evalAlg = inject
 
-instance Eval Op where
+instance Eval Op (Term Val) where
     evalAlg :: Op (Term Val) -> Term Val
     evalAlg (Mult x y) = case (unTerm x, unTerm y) of
         (Const m, Const n)  -> iConst (m * n)
@@ -83,23 +84,23 @@ instance Eval Op where
 eval :: ETerm -> VTerm
 eval = cata evalAlg
 
-class Desug f where
-    desugAlg :: f (Term Exp) -> Term Exp
+class Desug f g where
+    desugAlg :: f g -> g
 
-instance (Desug f, Desug g) => Desug (f :+: g) where
-    desugAlg :: (f :+: g) (Term Exp) -> Term Exp
+instance (Desug f v, Desug g v) => Desug (f :+: g) v where
+    desugAlg :: (f :+: g) v -> v
     desugAlg (Inl a) = desugAlg a
     desugAlg (Inr a) = desugAlg a
 
-instance Desug Val where
+instance Desug Val (Term Exp) where
     desugAlg :: Val (Term Exp) -> Term Exp
     desugAlg = inject
 
-instance Desug Op where
+instance Desug Op (Term Exp) where
     desugAlg :: Op (Term Exp) -> Term Exp
     desugAlg = inject
 
-instance Desug Sug where
+instance Desug Sug (Term Exp) where
     desugAlg :: Sug (Term Exp) -> Term Exp
     desugAlg (Neg x) = iConst (-1) `iMult` x
     desugAlg (Swap x) = iPair (iSnd x) (iFst x)
