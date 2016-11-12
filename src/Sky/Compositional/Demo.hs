@@ -7,6 +7,7 @@
 {-# LANGUAGE DeriveFunctor          #-}
 {-# LANGUAGE TypeOperators          #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE UndecidableInstances   #-}
 
 module Sky.Compositional.Demo where
 
@@ -64,48 +65,50 @@ type ETerm' = Term Exp'
 -- Algebra
 
 class Eval f v where
-    evalAlg :: f v -> v
+    evalAlg :: f (Term v) -> (Term v)
 
 instance (Eval f v, Eval g v) => Eval (f :+: g) v where
-    evalAlg :: (f :+: g) v -> v
+    evalAlg :: (f :+: g) (Term v) -> (Term v)
     evalAlg (Inl a) = evalAlg a
     evalAlg (Inr a) = evalAlg a
 
-instance (Val :<: v) => Eval Val (Term v) where
+instance (Val :<: v) => Eval Val v where
     evalAlg :: Val (Term v) -> Term v
     evalAlg = inject
 
-instance (Val :<: v) => Eval Op (Term v) where
+instance (Val :<: v) => Eval Op v where
     evalAlg :: Op (Term v) -> Term v
     evalAlg (Mult x y) = iConst $ projConst x * projConst y
     evalAlg (Fst p) = fst $ projPair p
     evalAlg (Snd p) = snd $ projPair p
 
-eval :: ETerm -> VTerm
+--eval :: ETerm -> VTerm
+eval :: (Functor f, Eval f g) => Term f -> Term g
 eval = cata evalAlg
 
 class Desug f g where
-    desugAlg :: f g -> g
+    desugAlg :: f (Term g) -> Term g
 
 instance (Desug f v, Desug g v) => Desug (f :+: g) v where
-    desugAlg :: (f :+: g) v -> v
+    desugAlg :: (f :+: g) (Term v) -> Term v
     desugAlg (Inl a) = desugAlg a
     desugAlg (Inr a) = desugAlg a
 
-instance Desug Val (Term Exp) where
-    desugAlg :: Val (Term Exp) -> Term Exp
+instance (Val :<: f, Op :<: f) => Desug Val f where
+    desugAlg :: Val (Term f) -> Term f
     desugAlg = inject
 
-instance Desug Op (Term Exp) where
-    desugAlg :: Op (Term Exp) -> Term Exp
+instance (Val :<:f, Op :<: f) => Desug Op f where
+    desugAlg :: Op (Term f) -> Term f
     desugAlg = inject
 
-instance Desug Sug (Term Exp) where
-    desugAlg :: Sug (Term Exp) -> Term Exp
+instance (Val :<: f, Op :<: f) => Desug Sug f where
+    desugAlg :: Sug (Term f) -> Term f
     desugAlg (Neg x) = iConst (-1) `iMult` x
     desugAlg (Swap x) = iPair (iSnd x) (iFst x)
 
-desug :: ETerm' -> ETerm
+--desug :: ETerm' -> ETerm
+desug :: (Functor f, Desug f g) => Term f -> Term g
 desug = cata desugAlg
 
 ----------------------------------------------------------------------------------------------------
@@ -118,4 +121,4 @@ sugExample :: ETerm'
 sugExample = iFst (iSwap (iPair (iConst 3) (iConst 2))) `iMult` iConst 5
 
 main :: IO ()
-main = print $ (eval . desug) sugExample
+main = print $ (eval (desug sugExample :: ETerm) :: VTerm)
