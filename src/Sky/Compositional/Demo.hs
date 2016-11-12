@@ -37,6 +37,12 @@ iConst x = inject (Const x)
 iPair :: (Val :<: f) => Term f -> Term f -> Term f
 iPair x y = inject (Pair x y)
 
+-- Unsafe (!!)
+projConst :: (Val :<: f) => Term f -> Int
+projConst v = case project v of Just (Const n) -> n
+projPair :: (Val :<: f) => Term f -> (Term f, Term f)
+projPair v = case project v of Just (Pair x y) -> (x, y)
+
 data Sug e
     = Neg e
     | Swap e
@@ -65,21 +71,15 @@ instance (Eval f v, Eval g v) => Eval (f :+: g) v where
     evalAlg (Inl a) = evalAlg a
     evalAlg (Inr a) = evalAlg a
 
-instance Eval Val (Term Val) where
-    evalAlg :: Val (Term Val) -> Term Val
+instance (Val :<: v) => Eval Val (Term v) where
+    evalAlg :: Val (Term v) -> Term v
     evalAlg = inject
 
-instance Eval Op (Term Val) where
-    evalAlg :: Op (Term Val) -> Term Val
-    evalAlg (Mult x y) = case (unTerm x, unTerm y) of
-        (Const m, Const n)  -> iConst (m * n)
-        _                   -> error "Argh"
-    evalAlg (Fst p) = case (unTerm p) of
-        (Pair x y)  -> x
-        _           -> error "Blargh"
-    evalAlg (Snd p) = case (unTerm p) of
-        (Pair x y)  -> y
-        _           -> error "Blargh"
+instance (Val :<: v) => Eval Op (Term v) where
+    evalAlg :: Op (Term v) -> Term v
+    evalAlg (Mult x y) = iConst $ projConst x * projConst y
+    evalAlg (Fst p) = fst $ projPair p
+    evalAlg (Snd p) = snd $ projPair p
 
 eval :: ETerm -> VTerm
 eval = cata evalAlg
