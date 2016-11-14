@@ -78,3 +78,8 @@ data OFst e = OFst e        deriving (Eq, Show, Functor)
 data OSnd e = OSnd e        deriving (Eq, Show, Functor)
 
 type Value = ADT (TSum (TPrim VConst) (TPrim VPair))
+
+{- How to GHCI this:
+    stack exec ghci -- -isrc -XFlexibleContexts -XTypeFamilies -XPolyKinds -XDataKinds src/Sky/Compositional/TypeShiet.hs
+    :kind! TOr False True
+-}
