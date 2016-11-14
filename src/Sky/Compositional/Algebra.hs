@@ -17,6 +17,7 @@ And https://hackage.haskell.org/package/compdata
 module Sky.Compositional.Algebra where
 
 import Control.Monad ((<=<))
+import Data.Functor.Const (Const)
 
 ----------------------------------------------------------------------------------------------------
 -- Essentially Data.Fix
@@ -114,3 +115,36 @@ cataM f = f <=< mapM (cataM f) . unTerm
 
 anaM :: (Traversable f , Monad m) => (a -> m (f a)) -> (a -> m (Term f))
 anaM f = (Term <$>) . mapM (anaM f) <=< f
+
+----------------------------------------------------------------------------------------------------
+-- Datatype product
+
+infixr 8 :*:
+
+data (f :*: g) e = f e :*: g e
+data FU_SUBLIME_A = FU_SUBLIME_A
+
+instance (Show (f e), Show (g e)) => Show ((f :*: g) e) where
+    show (a :*: b) = show a ++ " " ++ show b
+
+instance (Eq (f e), Eq (g e)) => Eq ((f :*: g) e) where
+    (a :*: b) == (a' :*: b')    = (a == a') && (b == b')
+
+instance (Functor f, Functor g) => Functor (f :*: g) where
+    fmap f (a :*: b) = fmap f a :*: fmap f b
+
+instance (Foldable f, Foldable g) => Foldable (f :*: g) where
+    foldMap :: Monoid m => (a -> m) -> (f :*: g) a -> m
+    foldMap f (a :*: b) = foldMap f a `mappend` foldMap f b
+
+instance (Traversable f, Traversable g) => Traversable (f :*: g) where
+    sequenceA :: Applicative x => (f :*: g) (x a) -> x ((f :*: g) a)
+    sequenceA (a :*: b) = (:*:) <$> sequenceA a <*> sequenceA b
+
+----------------------------------------------------------------------------------------------------
+
+infixr 7 :&:
+
+type (f :&: a) e = (f :*: Const a) e
+
+----------------------------------------------------------------------------------------------------
