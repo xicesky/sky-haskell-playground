@@ -98,9 +98,9 @@ instance (Eval f v, Eval g v) => Eval (f :+: g) v where
     evalAlg (Inl a) = evalAlg a
     evalAlg (Inr a) = evalAlg a
 
-instance (Val :<: v) => Eval Val v where
-    evalAlg :: Val (Term v) -> Term v
-    evalAlg = inject
+instance {-# OVERLAPPABLE #-} (g :<: f) => Eval g f where
+    evalAlg :: g (Term f) -> Term f
+    evalAlg = inject    -- inject :: (g :<: f) => g (Term f) -> Term f
 
 instance (Val :<: v) => Eval Op v where
     evalAlg :: Op (Term v) -> Term v
@@ -120,12 +120,8 @@ instance (Desug f v, Desug g v) => Desug (f :+: g) v where
     desugAlg (Inl a) = desugAlg a
     desugAlg (Inr a) = desugAlg a
 
-instance (Val :<: f, Op :<: f) => Desug Val f where
-    desugAlg :: Val (Term f) -> Term f
-    desugAlg = inject
-
-instance (Val :<:f, Op :<: f) => Desug Op f where
-    desugAlg :: Op (Term f) -> Term f
+instance {-# OVERLAPPABLE #-} (g :<: f) => Desug g f where
+    desugAlg :: g (Term f) -> Term f
     desugAlg = inject
 
 instance (Val :<: f, Op :<: f) => Desug Sug f where
