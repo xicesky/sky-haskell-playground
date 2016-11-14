@@ -16,6 +16,8 @@ And https://hackage.haskell.org/package/compdata
 
 module Sky.Compositional.Algebra where
 
+import Control.Monad ((<=<))
+
 ----------------------------------------------------------------------------------------------------
 -- Essentially Data.Fix
 
@@ -106,3 +108,9 @@ cata f = f . fmap (cata f) . unTerm
 
 ana :: Functor f => (a -> f a) -> (a -> Term f)
 ana f = Term . fmap (ana f) . f
+
+cataM :: (Traversable f , Monad m) => (f a -> m a) -> (Term f -> m a)
+cataM f = f <=< mapM (cataM f) . unTerm
+
+anaM :: (Traversable f , Monad m) => (a -> m (f a)) -> (a -> m (Term f))
+anaM f = (Term <$>) . mapM (anaM f) <=< f
