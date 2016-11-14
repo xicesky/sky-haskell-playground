@@ -117,7 +117,7 @@ anaM :: (Traversable f , Monad m) => (a -> m (f a)) -> (a -> m (Term f))
 anaM f = (Term <$>) . mapM (anaM f) <=< f
 
 ----------------------------------------------------------------------------------------------------
--- Datatype product
+-- Datatype product (Essentially tuples)
 
 infixr 8 :*:
 
@@ -140,6 +140,21 @@ instance (Foldable f, Foldable g) => Foldable (f :*: g) where
 instance (Traversable f, Traversable g) => Traversable (f :*: g) where
     sequenceA :: Applicative x => (f :*: g) (x a) -> x ((f :*: g) a)
     sequenceA (a :*: b) = (:*:) <$> sequenceA a <*> sequenceA b
+
+ 
+getL :: (f :*: g) a -> f a
+getL (a :*: b) = a
+
+getR :: (f :*: g) a -> g a
+getR (a :*: b) = b
+
+distributeP :: ((f :+: g) :*: r) a -> ((f :*: r) :+: (g :*: r)) a
+distributeP ((Inl a) :*: r) = Inl (a :*: r)
+distributeP ((Inr b) :*: r) = Inr (b :*: r)
+
+collectP :: ((f :*: r) :+: (g :*: r)) a -> ((f :+: g) :*: r) a
+collectP (Inl (a :*: r)) = (Inl a) :*: r
+collectP (Inr (b :*: r)) = (Inr b) :*: r
 
 ----------------------------------------------------------------------------------------------------
 
