@@ -2,7 +2,7 @@
 {-# LANGUAGE ScopedTypeVariables    #-}
 {-# LANGUAGE RankNTypes             #-}
 
-module XX where
+module Sky.ProblemCases.TypeVariableEscape where
 
 g :: (forall a. a) -> b
 g x = undefined
