@@ -37,3 +37,4 @@ executable sky-haskell-playground
     , unordered-containers  >= 0.2.7
     , template-haskell      >= 2.10
     , data-fix              >= 0.0.3
+    , compdata              >= 0.10.1
