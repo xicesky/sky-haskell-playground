@@ -11,7 +11,7 @@
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE UndecidableInstances   #-}
 
-module Sky.Compositional.Demo where
+module Sky.Compositional.Demo1Basics where
 
 import Sky.Compositional.Algebra
 

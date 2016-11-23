@@ -7,7 +7,7 @@
 {-# LANGUAGE RankNTypes             #-}
 {-# LANGUAGE UndecidableInstances   #-}
 
-module Sky.Compositional.Demo2 where
+module Sky.Compositional.Demo2Parametric where
 
 ----------------------------------------------------------------------------------------------------
 
