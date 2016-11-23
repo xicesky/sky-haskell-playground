@@ -38,3 +38,4 @@ executable sky-haskell-playground
     , template-haskell      >= 2.10
     , data-fix              >= 0.0.3
     , compdata              >= 0.10.1
+    , compdata-param        >= 0.9.1
