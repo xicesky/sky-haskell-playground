@@ -217,8 +217,6 @@ instance Profunctor Exp4 where
 data Term5 f = Term5 (forall v. Term5In f v)
 data Term5In f v = In5 (f v (Term5In f v)) | Var5 v
 
--- Having the Var5 as "Holes" has additonal advantages later...
-
 data Exp5 v e
     = Lam5 (v -> e)
     | App5 e e
